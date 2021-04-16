@@ -1,7 +1,7 @@
 <?php
 if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
-class Disciple_Tools_Plugin_Starter_Template_Tile
+class DT_Prayer_Calendar_Tile
 {
     private static $_instance = null;
     public static function instance(){
@@ -12,26 +12,11 @@ class Disciple_Tools_Plugin_Starter_Template_Tile
     } // End instance()
 
     public function __construct(){
-        add_filter( 'dt_details_additional_tiles', [ $this, "dt_details_additional_tiles" ], 10, 2 );
         add_filter( "dt_custom_fields_settings", [ $this, "dt_custom_fields" ], 1, 2 );
-        add_action( "dt_details_additional_section", [ $this, "dt_add_section" ], 30, 2 );
-    }
+        add_action( "dt_details_additional_section", [ $this, "dt_add_section" ], 100, 2 );
+        add_filter( "dt_user_list_filters", [ $this, "dt_user_list_filters" ], 10, 2 );
 
-    /**
-     * This function registers a new tile to a specific post type
-     *
-     * @todo Set the post-type to the target post-type (i.e. contacts, groups, trainings, etc.)
-     * @todo Change the tile key and tile label
-     *
-     * @param $tiles
-     * @param string $post_type
-     * @return mixed
-     */
-    public function dt_details_additional_tiles( $tiles, $post_type = "" ) {
-        if ( $post_type === "contacts" ){
-            $tiles["disciple_tools_plugin_starter_template"] = [ "label" => __( "Plugin Starter Template", 'disciple_tools' ) ];
-        }
-        return $tiles;
+        add_action( 'dt_post_list_filters_sidebar', [ $this, 'dt_list_exports_filters'], 10, 1 );
     }
 
     /**
@@ -40,127 +25,243 @@ class Disciple_Tools_Plugin_Starter_Template_Tile
      * @return array
      */
     public function dt_custom_fields( array $fields, string $post_type = "" ) {
-        /**
-         * @todo set the post type
-         */
-        if ( $post_type === "contacts" ){
-            /**
-             * @todo Add the fields that you want to include in your tile.
-             *
-             * Examples for creating the $fields array
-             * Contacts
-             * @link https://github.com/DiscipleTools/disciple-tools-theme/blob/256c9d8510998e77694a824accb75522c9b6ed06/dt-contacts/base-setup.php#L108
-             *
-             * Groups
-             * @link https://github.com/DiscipleTools/disciple-tools-theme/blob/256c9d8510998e77694a824accb75522c9b6ed06/dt-groups/base-setup.php#L83
-             */
 
-            /**
-             * This is an example of a text field
-             */
-            $fields['disciple_tools_plugin_starter_template_text'] = [
-                'name'        => __( 'Text', 'disciple_tools' ),
-                'description' => _x( 'Text', 'Optional Documentation', 'disciple_tools' ),
-                'type'        => 'text',
-                'default'     => '',
-                'tile' => 'disciple_tools_plugin_starter_template',
-                'icon' => get_template_directory_uri() . '/dt-assets/images/edit.svg',
-            ];
-            /**
-             * This is an example of a multiselect field
-             */
-            $fields["disciple_tools_plugin_starter_template_multiselect"] = [
-                "name" => __( 'Multiselect', 'disciple_tools' ),
-                "default" => [
-                    "one" => [ "label" => __( "One", 'disciple_tools' ) ],
-                    "two" => [ "label" => __( "Two", 'disciple_tools' ) ],
-                    "three" => [ "label" => __( "Three", 'disciple_tools' ) ],
-                    "four" => [ "label" => __( "Four", 'disciple_tools' ) ],
-                ],
-                "tile" => "disciple_tools_plugin_starter_template",
-                "type" => "multi_select",
-                "hidden" => false,
-                'icon' => get_template_directory_uri() . '/dt-assets/images/edit.svg',
-            ];
-            /**
-             * This is an example of a key select field
-             */
-            $fields["disciple_tools_plugin_starter_template_keyselect"] = [
-                'name' => "Key Select",
-                'type' => 'key_select',
-                "tile" => "disciple_tools_plugin_starter_template",
+        if ( $post_type === "contacts" ){
+            $fields['prayer_calendar'] = [
+                'name' => __( 'Prayer Calendar', 'disciple_tools' ),
+                'type' => 'post_user_meta',
+                "tile" => "status",
                 'default' => [
-                    'new'   => [
-                        "label" => _x( 'New', 'Training Status label', 'disciple_tools' ),
-                        "description" => _x( "New training added to the system", "Training Status field description", 'disciple_tools' ),
+                    'none'   => [
+                        "label" => _x( 'Not on Calendar', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Not on prayer calendar", "Prayer Calendar field description", 'disciple_tools' ),
                         'color' => "#ff9800"
                     ],
-                    'proposed'   => [
-                        "label" => _x( 'Proposed', 'Training Status label', 'disciple_tools' ),
-                        "description" => _x( "This training has been proposed and is in initial conversations", "Training Status field description", 'disciple_tools' ),
-                        'color' => "#ff9800"
-                    ],
-                    'scheduled' => [
-                        "label" => _x( 'Scheduled', 'Training Status label', 'disciple_tools' ),
-                        "description" => _x( "This training is confirmed, on the calendar.", "Training Status field description", 'disciple_tools' ),
+                    'auto' => [
+                        "label" => _x( 'Auto', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Automatically, ordered.", "Prayer Calendar field description", 'disciple_tools' ),
                         'color' => "#4CAF50"
                     ],
-                    'in_progress' => [
-                        "label" => _x( 'In Progress', 'Training Status label', 'disciple_tools' ),
-                        "description" => _x( "This training is confirmed, on the calendar, or currently active.", "Training Status field description", 'disciple_tools' ),
+                    'every_month' => [
+                        "label" => _x( 'Every Month', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray for this contact every month. Automatically, ordered.", "Prayer Calendar field description", 'disciple_tools' ),
                         'color' => "#4CAF50"
                     ],
-                    'complete'     => [
-                        "label" => _x( "Complete", 'Training Status label', 'disciple_tools' ),
-                        "description" => _x( "This training has successfully completed", "Training Status field description", 'disciple_tools' ),
+                    'every_week' => [
+                        "label" => _x( 'Every Week', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray for this contact every month. Automatically, ordered.", "Prayer Calendar field description", 'disciple_tools' ),
                         'color' => "#4CAF50"
                     ],
-                    'paused'       => [
-                        "label" => _x( 'Paused', 'Training Status label', 'disciple_tools' ),
-                        "description" => _x( "This contact is currently on hold. It has potential of getting scheduled in the future.", "Training Status field description", 'disciple_tools' ),
-                        'color' => "#ff9800"
+                    'every_day' => [
+                        "label" => _x( 'Every Day', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray for this contact every month. Automatically, ordered.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
                     ],
-                    'closed'       => [
-                        "label" => _x( 'Closed', 'Training Status label', 'disciple_tools' ),
-                        "description" => _x( "This training is no longer going to happen.", "Training Status field description", 'disciple_tools' ),
-                        "color" => "#366184",
+                    'every_monday' => [
+                        "label" => _x( 'Every Monday', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray every Monday.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
                     ],
+                    'every_tuesday' => [
+                        "label" => _x( 'Every Tuesday', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray every Tuesday.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
+                    ],
+                    'every_wednesday' => [
+                        "label" => _x( 'Every Wednesday', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray every Wednesday.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
+                    ],
+                    'every_thursday' => [
+                        "label" => _x( 'Every Thursday', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray every Thursday.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
+                    ],
+                    'every_friday' => [
+                        "label" => _x( 'Every Friday', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray every Friday.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
+                    ],
+                    'every_saturday' => [
+                        "label" => _x( 'Every Saturday', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray every Saturday.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
+                    ],
+                    'every_sunday' => [
+                        "label" => _x( 'Every Sunday', 'Prayer Calendar label', 'disciple_tools' ),
+                        "description" => _x( "Pray every Sunday.", "Prayer Calendar field description", 'disciple_tools' ),
+                        'color' => "#4CAF50"
+                    ],
+
                 ],
-                'icon' => get_template_directory_uri() . '/dt-assets/images/edit.svg',
-                "default_color" => "#366184",
             ];
         }
+
         return $fields;
     }
 
     public function dt_add_section( $section, $post_type ) {
-        /**
-         * @todo set the post type and the section key that you created in the dt_details_additional_tiles() function
-         */
-        if ( $post_type === "contacts" && $section === "disciple_tools_plugin_starter_template" ){
-            /**
-             * These are two sets of key data:
-             * $this_post is the details for this specific post
-             * $post_type_fields is the list of the default fields for the post type
-             *
-             * You can pull any query data into this section and display it.
-             */
+        if ( $post_type === "contacts" && $section === "status" ){
             $this_post = DT_Posts::get_post( $post_type, get_the_ID() );
             $post_type_fields = DT_Posts::get_post_field_settings( $post_type );
+
+            $state = false;
+            if ( isset( $this_post['prayer_calendar'] ) && ! empty( $this_post['prayer_calendar'] ) ) {
+                $state = $this_post['prayer_calendar'][0]['value'];
+
+                if ( count( $this_post['prayer_calendar']) > 1 ){
+                    $this->delete_extra_prayer_times( $this_post['prayer_calendar'][0]['id'] );
+                }
+            }
             ?>
-
-            <!--
-            @todo you can add HTML content to this section.
-            -->
-
             <div class="cell small-12 medium-4">
-                <!-- @todo remove this notes section-->
-                <strong>You can do a number of customizations here.</strong><br><br>
-                All the post-type fields: ( <?php echo '<code>' . esc_html( implode( ', ', array_keys( $post_type_fields ) ) ) . '</code>' ?> )<br><br>
-                All the fields for this post: ( <?php echo '<code>' . esc_html( implode( ', ', array_keys( $this_post ) ) ) . '</code>' ?> )<br><br>
+                <div class="section-subheader">
+                    <img src="https://global.zume.community/wp-content/themes/disciple-tools-theme/dt-assets/images/calendar.svg">
+                    <?php echo esc_html__( 'Prayer Calendar', 'disciple_tools' ) ?>
+                </div>
+                <select id="prayer-calendar">
+                    <?php
+                    foreach( $post_type_fields['prayer_calendar']['default'] as $key => $item ) {
+                        ?>
+                        <option value="<?php echo esc_attr( $key ) ?>" <?php echo ( $state === $key ) ? 'selected' : '' ?>><?php echo esc_html( $item['label']) ?></option>
+                        <?php
+                    }
+                    ?>
+                </select>
             </div>
+            <script>
+                jQuery(document).ready(function($){
+                    $('#prayer-calendar').on('change', function(){
+
+                        let d = new Date()
+                        d = d.toISOString().slice(0, 19).replace('T', ' ')
+
+                        let data = {}
+                        let v = $('#prayer-calendar').val()
+
+                        if ( typeof post.prayer_calendar !== 'undefined' ) {
+                            data = {
+                                'prayer_calendar': {
+                                    'values': [
+                                        {
+                                            id: post.prayer_calendar[0].id,
+                                            value: v,
+                                            category: v,
+                                            date: d
+                                        }
+                                    ]
+                                }
+                            }
+                        } else {
+                            data = {
+                                'prayer_calendar': {
+                                    'values': [
+                                        {
+                                            value: v,
+                                            category: v,
+                                            date: d
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+
+                        window.API.update_post(detailsSettings.post_type, detailsSettings.post_id, data )
+                            .done(function(d){
+                                console.log(d)
+                                $('#add-to-prayer-calendar').removeClass('hollow').html('On Calendar')
+                            })
+                    })
+                })
+
+            </script>
+
 
         <?php }
     }
+
+    public function delete_extra_prayer_times( $post_id_to_keep ){
+        global $wpdb;
+        $wpdb->query($wpdb->prepare( "DELETE FROM $wpdb->dt_post_user_meta WHERE meta_key = 'prayer_calendar' AND user_id = %s AND post_id = %s AND id != %s", get_current_user_id(), get_the_ID(), $post_id_to_keep) );
+    }
+
+    public function dt_user_list_filters( $filters, $post_type ){
+
+        if ( $post_type === 'contacts' ) {
+            $key = get_user_option( 'prayer_calendar_app_daily' );
+            if ( ! empty( $key ) ) {
+                $counts = $this->get_my_prayer_counts( $post_type );
+                $category_counts = [];
+                $total_prayer_items = 0;
+                foreach ($counts as $count) {
+                    $total_prayer_items += $count["count"];
+                    dt_increment($category_counts[$count["category"]], $count["count"]);
+                }
+
+                $filters["tabs"][] = [
+                    "key" => "prayer_calendar",
+                    "label" => _x("Prayer Calendar", 'List Filters', 'disciple_tools'),
+                    "count" => $total_prayer_items,
+                    "order" => 20
+                ];
+
+                $post_type_fields = DT_Posts::get_post_field_settings( 'contacts' );
+                foreach( $post_type_fields['prayer_calendar']['default'] as $key => $item ){
+                    if ( 'none' === $key ){
+                        continue;
+                    }
+
+                    $filters["filters"][] = [
+                        'ID' => $key,
+                        'tab' => 'prayer_calendar',
+                        'name' => $item['label'],
+                        'query' => [
+                            'prayer_calendar' => [$key],
+                            'sort' => 'name'
+                        ],
+                        "count" => $category_counts[$key] ?? 0,
+                    ];
+                }
+            }
+        }
+        return $filters;
+    }
+
+    private static function get_my_prayer_counts( $post_type ){
+
+        global $wpdb;
+        $current_user = get_current_user_id();
+
+        $results = $wpdb->get_results( $wpdb->prepare( "
+            SELECT pum.category, count(pum.id) as count
+                FROM $wpdb->dt_post_user_meta pum
+                JOIN $wpdb->posts p ON p.ID=pum.post_id
+                WHERE
+                pum.user_id = %d
+                AND pum.meta_key = 'prayer_calendar'
+                AND p.post_type = %s
+                GROUP BY pum.category
+        ", $current_user, $post_type ), ARRAY_A);
+
+        return $results;
+    }
+
+    public function dt_list_exports_filters( $post_type ){
+        if ( 'contacts' === $post_type ){
+            $key = get_user_option( 'prayer_calendar_app_daily' );
+            if ( ! empty( $key ) ) {
+                $app_link = trailingslashit( trailingslashit( site_url() ) . 'prayer_calendar_app/daily/' . esc_attr( $key ) );
+                ?>
+                <div class="grid-x" style="margin-top:1rem;">
+                    <div class="cell center">
+                        <a href="<?php echo esc_url( $app_link ) ?>">Prayer Calendar App</a>
+                    </div>
+                </div>
+                <?php
+            }
+        }
+    }
+
+
 }
-Disciple_Tools_Plugin_Starter_Template_Tile::instance();
+DT_Prayer_Calendar_Tile::instance();

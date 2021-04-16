@@ -1,20 +1,19 @@
 <?php
 if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
-if ( strpos( dt_get_url_path(), 'magic_app' ) !== false ){
-    Disciple_Tools_Plugin_Starter_Magic_Link::instance();
+if ( strpos( dt_get_url_path(), 'prayer_calendar_app' ) !== false ){
+    DT_Prayer_Calendar_Magic_Link::instance();
 }
 
-class Disciple_Tools_Plugin_Starter_Magic_Link
+class DT_Prayer_Calendar_Magic_Link
 {
 
     public $magic = false;
     public $parts = false;
-    public $title = 'Magic';
-    public $root = "magic_app"; // @todo define the root of the url {yoursite}/root/type/key/action
-    public $type = 'magic_type'; // @todo define the type
-    public $post_type = 'contacts'; // @todo set the post type this magic link connects with.
-
+    public $title = 'Prayer Calendar App';
+    public $root = "prayer_calendar_app";
+    public $type = 'daily';
+    public $post_type = 'user';
 
     private static $_instance = null;
     public static function instance() {
@@ -34,7 +33,6 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
         add_filter( 'dt_allow_rest_access', [ $this, '_authorize_url' ], 10, 1 );
         add_action( 'rest_api_init', [ $this, 'add_endpoints' ] );
 
-
         // fail if not valid url
         $url = dt_get_url_path();
         if ( strpos( $url, $this->root . '/' . $this->type ) === false ) {
@@ -43,6 +41,7 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
 
         // fail to blank if not valid url
         $this->parts = $this->magic->parse_url_parts();
+        dt_write_log($this->parts);
         if ( ! $this->parts ){
             // @note this returns a blank page for bad url, instead of redirecting to login
             add_filter( 'dt_templates_for_urls', function ( $template_for_url ) {
@@ -87,7 +86,7 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
             'name' => $this->title,
             'root' => $this->root,
             'type' => $this->type,
-            'meta_key' => 'public_key',
+            'meta_key' => $this->root . '_' . $this->type,
             'actions' => [
                 '' => 'Manage',
             ],
@@ -202,7 +201,7 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
         /**
          * Places a title on the web browser tab.
          */
-        return __( "Magic", 'disciple_tools' );
+        return __( "Prayer Calendar", 'disciple_tools' );
     }
 
     public function header_style(){
@@ -224,7 +223,7 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
                 'nonce' => wp_create_nonce( 'wp_rest' ),
                 'parts' => $this->parts,
                 'translations' => [
-                    'add' => __( 'Add Magic', 'disciple_tools' ),
+                    'add' => __( 'Add Prayer Calendar', 'disciple_tools' ),
                 ],
             ]) ?>][0]
 
@@ -272,7 +271,6 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
         <?php
         return true;
     }
-
 
 
     public function body(){
@@ -330,7 +328,7 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
 
         switch ( $action ) {
             case 'get':
-                return $this->endpoint_get();
+                return $this->endpoint_get( $params['parts'] );
 
             // add other cases
 
@@ -339,11 +337,18 @@ class Disciple_Tools_Plugin_Starter_Magic_Link
         }
     }
 
-    public function endpoint_get() {
-        $data = [];
+    public function endpoint_get( $parts ) {
+        global $wpdb;
+//        $user_id = $this->parts['post_id'];
 
-        $data[] = [ 'name' => 'List item' ]; // @todo remove example
-        $data[] = [ 'name' => 'List item' ]; // @todo remove example
+        dt_write_log($parts);
+
+        $data = $wpdb->get_results( $wpdb->prepare( "
+            SELECT p.post_title as name
+            FROM $wpdb->dt_post_user_meta pum
+            JOIN $wpdb->posts p ON p.ID=pum.post_id
+            WHERE pum.user_id = %s AND pum.meta_key = %s
+        ", $parts['post_id'], 'prayer_calendar' ), ARRAY_A );
 
         return $data;
     }
