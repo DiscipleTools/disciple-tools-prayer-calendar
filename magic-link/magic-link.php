@@ -153,6 +153,7 @@ class DT_Prayer_Calendar_Magic_Link
         // @link /disciple-tools-theme/dt-assets/functions/enqueue-scripts.php
         $allowed_js = [
             'jquery',
+            'jquery-ui',
             'lodash',
             'moment',
             'datepicker',
@@ -209,7 +210,8 @@ class DT_Prayer_Calendar_Magic_Link
         <style>
             body {
                 background-color: white;
-                padding: 1em;
+                max-width: 800px;
+                margin: 0 auto;
             }
         </style>
         <?php
@@ -258,10 +260,18 @@ class DT_Prayer_Calendar_Magic_Link
                 content.empty()
                 jQuery.each(data, function(i,v){
                     content.prepend(`
-                         <div class="cell">
+                         <div class="cell draggable ui-widget-content prayer-list" style="padding:1em .5em;border:1px solid lightgrey;">
                              ${v.name}
                          </div>
                      `)
+                })
+
+                jQuery('.prayer-list').draggable({
+                    axis: "x",
+                    revert: true,
+                    stop: function(e) {
+                        console.log(e)
+                    }
                 })
 
                 spinner.removeClass('active')
@@ -276,6 +286,11 @@ class DT_Prayer_Calendar_Magic_Link
     public function body(){
         ?>
         <div id="custom-style"></div>
+        <style>
+            #wrapper {
+                margin-top: 1em;
+            }
+        </style>
         <div id="wrapper">
             <div class="grid-x">
                 <div class="cell center">
