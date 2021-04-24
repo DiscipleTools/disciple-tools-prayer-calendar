@@ -32,6 +32,7 @@ class DT_Prayer_Calendar_Magic_Link
         // register REST and REST access
         add_filter( 'dt_allow_rest_access', [ $this, '_authorize_url' ], 10, 1 );
         add_action( 'rest_api_init', [ $this, 'add_endpoints' ] );
+        add_action( 'wp_enqueue_scripts', [ $this, 'wp_enqueue_scripts' ], 100 );
 
         // fail if not valid url
         $url = dt_get_url_path();
@@ -41,7 +42,6 @@ class DT_Prayer_Calendar_Magic_Link
 
         // fail to blank if not valid url
         $this->parts = $this->magic->parse_url_parts();
-        dt_write_log($this->parts);
         if ( ! $this->parts ){
             // @note this returns a blank page for bad url, instead of redirecting to login
             add_filter( 'dt_templates_for_urls', function ( $template_for_url ) {
@@ -134,6 +134,14 @@ class DT_Prayer_Calendar_Magic_Link
         return false;
     }
 
+    public function wp_enqueue_scripts(){
+        $url = dt_get_url_path();
+        if ( strpos( $url, $this->root . '/' . $this->type ) !== false ) {
+            wp_enqueue_script( 'jquery-ui' );
+            wp_enqueue_script( 'jquery-touch-punch');
+        }
+    }
+
     public function _header(){
         wp_head();
         $this->header_style();
@@ -164,6 +172,7 @@ class DT_Prayer_Calendar_Magic_Link
             'mapbox-search-widget',
             'google-search-widget',
             'jquery-cookie',
+            'jquery-touch-punch'
         ];
 
         global $wp_scripts;
@@ -253,6 +262,26 @@ class DT_Prayer_Calendar_Magic_Link
                     })
             }
 
+            window.log_prayer_action = ( post_id ) => {
+                // note parts.post_id is the user_id, not the post_id
+                jQuery.ajax({
+                    type: "POST",
+                    data: JSON.stringify({ action: 'log', parts: jsObject.parts, post_id: post_id }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    url: jsObject.root + jsObject.parts.root + '/v1/' + jsObject.parts.type,
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('X-WP-Nonce', jsObject.nonce )
+                    }
+                })
+                    .done(function(data){
+                        console.log(data)
+                    })
+                    .fail(function(e) {
+                        console.log(e)
+                    })
+            }
+
             window.load_magic = ( data ) => {
                 let content = jQuery('#content')
                 let spinner = jQuery('.loading-spinner')
@@ -260,18 +289,28 @@ class DT_Prayer_Calendar_Magic_Link
                 content.empty()
                 jQuery.each(data, function(i,v){
                     content.prepend(`
-                         <div class="cell draggable ui-widget-content prayer-list" style="padding:1em .5em;border:1px solid lightgrey;">
-                             ${v.name}
+                         <div class="cell prayer-list-wrapper">
+                            <div class="draggable ui-widget-content prayer-list" data-value="${v.post_id}" id="item-${v.post_id}">
+                                ${v.name}
+                            </div>
                          </div>
                      `)
                 })
 
-                jQuery('.prayer-list').draggable({
+                let prayer_list = jQuery('.prayer-list')
+
+                prayer_list.draggable({
                     axis: "x",
                     revert: true,
+                    grid: [200],
                     stop: function(e) {
-                        console.log(e)
+                        window.log_prayer_action(e.target.dataset.value)
+                        jQuery('#item-'+e.target.dataset.value).addClass('checked-off')
                     }
+                })
+                prayer_list.click(function(e){
+                    window.log_prayer_action(e.target.dataset.value)
+                    jQuery('#item-'+e.target.dataset.value).addClass('checked-off')
                 })
 
                 spinner.removeClass('active')
@@ -290,14 +329,29 @@ class DT_Prayer_Calendar_Magic_Link
             #wrapper {
                 margin-top: 1em;
             }
+            #content {
+                overflow-x: hidden;
+            }
+            .prayer-list-wrapper {
+                background-color: green;
+            }
+            .prayer-list {
+                padding: 1.5em .5em;
+                border:1px solid lightgrey;
+                background-color: white;
+                font-size: 1.3em;
+                font-weight: bolder;
+            }
+            .checked-off {
+                margin-left: 40px;
+            }
         </style>
         <div id="wrapper">
             <div class="grid-x">
                 <div class="cell center">
-                    <h2 id="title">Title</h2>
+                    <h2 id="title">Prayer List</h2>
                 </div>
             </div>
-            <hr>
             <div class="grid-x" id="content"><span class="loading-spinner active"></span><!-- javascript container --></div>
         </div>
         <script>
@@ -334,19 +388,14 @@ class DT_Prayer_Calendar_Magic_Link
         $params = dt_recursive_sanitize_array( $params );
         $action = sanitize_text_field( wp_unslash( $params['action'] ) );
 
-        // if parsing public key
-        //        $magic = $this->magic;
-        //        $post_id = $magic->get_post_id( $params['parts']['meta_key'], $params['parts']['public_key'] );
-        //        if ( ! $post_id ){
-        //            return new WP_Error( __METHOD__, "Missing post record", [ 'status' => 400 ] );
-        //        }
-
         switch ( $action ) {
             case 'get':
                 return $this->endpoint_get( $params['parts'] );
-
-            // add other cases
-
+            case 'log':
+                if ( ! isset( $params['post_id'] ) ){
+                    return new WP_Error( __METHOD__, "Missing parameters", [ 'status' => 400 ] );
+                }
+                return $this->endpoint_log( $params['parts'], $params['post_id'] );
             default:
                 return new WP_Error( __METHOD__, "Missing valid action", [ 'status' => 400 ] );
         }
@@ -356,16 +405,60 @@ class DT_Prayer_Calendar_Magic_Link
         global $wpdb;
 //        $user_id = $this->parts['post_id'];
 
-        dt_write_log($parts);
+        // @todo build the query to make the list filter from
+        // current day (i.e. thursday),
+        // every day
+        // every week (if not prayed for this week)
+        // every month ( if not prayed for this month)
+        // auto
+
+        // max list 20
 
         $data = $wpdb->get_results( $wpdb->prepare( "
-            SELECT p.post_title as name
+            SELECT p.ID as post_id, p.post_title as name
             FROM $wpdb->dt_post_user_meta pum
             JOIN $wpdb->posts p ON p.ID=pum.post_id
             WHERE pum.user_id = %s AND pum.meta_key = %s
         ", $parts['post_id'], 'prayer_calendar' ), ARRAY_A );
 
         return $data;
+    }
+
+    public function endpoint_log( $parts, $post_id ) {
+
+        $args = [
+            'parent_id' => $parts['post_id'], // using parent_id to record the user_id. i.e. parent of the record is the user.
+            'post_id' => $post_id,
+            'post_type' => 'contacts',
+            'type' => $parts['root'],
+            'subtype' => $parts['type'],
+            'payload' => null,
+            'value' => 1,
+            'time_end' => time(),
+        ];
+
+        // get geolocation of the contact, not the user
+        $contact = DT_Posts::get_post('contacts', $post_id, false, false, true );
+        if ( isset( $contact['location_grid_meta'] ) ) {
+            $location = $contact['location_grid_meta'][0];
+            $args['lng'] = $location['lng'];
+            $args['lat'] = $location['lat'];
+            $args['level'] = $location['level'];
+            $args['label'] = $location['label'];
+            $args['grid_id'] = $location['grid_id'];
+        } else if ( isset( $contact['location_grid'] ) ) {
+            $location = $contact['location_grid'][0];
+            $grid_record = Disciple_Tools_Mapping_Queries::get_by_grid_id($location['grid_id']);
+            $args['lng'] = $grid_record['lng'];
+            $args['lat'] = $grid_record['lat'];
+            $args['level'] = $grid_record['level'];
+            $args['label'] = $location['label'];
+            $args['grid_id'] = $location['grid_id'];
+        }
+
+
+        return Disciple_Tools_Reports::insert( $args );
+
     }
 }
 
