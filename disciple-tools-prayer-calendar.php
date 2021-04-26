@@ -81,10 +81,6 @@ class DT_Prayer_Calendar {
     private function __construct() {
         $is_rest = dt_is_rest();
 
-//        if ( $is_rest && strpos( dt_get_url_path(), 'dt_prayer_calendar_template' ) !== false ) {
-//            require_once( 'rest-api/rest-api.php' ); // adds starter rest api class
-//        }
-
 //        if ( strpos( dt_get_url_path(), 'metrics' ) !== false || ( $is_rest && strpos( dt_get_url_path(), 'disciple-tools-prayer-calendar-metrics' ) !== false ) ){
 //            require_once( 'charts/charts-loader.php' );  // add custom charts to the metrics area
 //        }
