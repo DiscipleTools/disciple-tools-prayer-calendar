@@ -12,6 +12,7 @@ class DT_Prayer_Calendar_Magic_Link
     public $parts = false;
     public $title = 'Prayer Calendar App';
     public $root = "prayer_calendar_app";
+    public $key = 'prayer_calendar_app_daily';
     public $type = 'daily';
     public $post_type = 'user';
 
@@ -209,8 +210,39 @@ class DT_Prayer_Calendar_Magic_Link
         <style>
             body {
                 background-color: white;
+            }
+            #wrapper {
                 max-width: 800px;
                 margin: 0 auto;
+            }
+            #content {
+                overflow-x: hidden;
+            }
+            .prayer-list-wrapper {
+                background-color: #8BC34A;
+            }
+            .prayer-list {
+                padding: 1.5em .5em;
+                border:1px solid lightgrey;
+                background-color: white;
+                font-size: 1.3em;
+                font-weight: bolder;
+            }
+            .checked-off {
+                margin-left: 40px;
+            }
+            #title_link {
+                color: white;
+            }
+            .item-name {
+                padding-left:1em;
+            }
+            .basic_lists {
+                cursor: pointer;
+                color: #3f729b;
+            }
+            #offCanvasLeft ul {
+                list-style-type: none;
             }
         </style>
         <?php
@@ -230,7 +262,26 @@ class DT_Prayer_Calendar_Magic_Link
 
             jQuery(document).ready(function(){
                 clearInterval(window.fiveMinuteTimer)
+                set_title_url()
+                window.get_list()
+
+                $('.filter_link').on('click', function(e){
+                    let metavalue = $(this).data('meta-value')
+                    let posttype = $(this).data('posttype')
+                    $('#content').empty()
+                    $('.loading-spinner').addClass('active')
+                    window.get_filter( posttype, metavalue )
+                    $('#offCanvasLeft').foundation('close')
+                })
+                $('.basic_lists').on('click', function(e){
+                    let type = $(this).data('type')
+                    console.log(type)
+                })
             })
+
+            function set_title_url(){
+                jQuery('#title_link').prop('href', '/' + jsObject.parts.root + '/' + jsObject.parts.type + '/' + jsObject.parts.public_key )
+            }
 
             window.get_list = () => {
                 jQuery.ajax({
@@ -275,17 +326,28 @@ class DT_Prayer_Calendar_Magic_Link
             window.load_list = ( data ) => {
                 let content = jQuery('#content')
                 let spinner = jQuery('.loading-spinner')
-
+                let icon = ''
                 content.empty()
                 jQuery.each(data.lists, function(i,v){
+                    let label = i.replace('_', ' ')
                     content.append(`
-                        <div class="cell center" style="background:whitesmoke;text-transform:capitalize;">${i} <span>(${data.counts[i]})</span></div>
+                        <div class="cell center" style="background:whitesmoke;text-transform:capitalize;">${label} <span>(${data.counts[i]})</span></div>
                         `)
+
                     jQuery.each(v, function(ii,vv){
+                        icon = ''
+                        if ( 'contacts' === vv.post_type ) {
+                            icon = 'fi-torso'
+                        } else if ( 'groups' === vv.post_type ) {
+                            icon = 'fi-torsos-all'
+                        } else if ( 'trainings' === vv.post_type ) {
+                            icon = 'fi-results-demographics'
+                        }
+
                         content.append(`
                          <div class="cell prayer-list-wrapper">
                             <div class="draggable ui-widget-content prayer-list" data-value="${vv.post_id}" id="item-${vv.post_id}">
-                                ${vv.name}
+                                <i class="${icon}"></i> <span class="item-name">${vv.name}</span>
                             </div>
                          </div>
                      `)
@@ -312,6 +374,28 @@ class DT_Prayer_Calendar_Magic_Link
                 spinner.removeClass('active')
 
             }
+
+            window.get_filter = ( posttype, metavalue ) => {
+                jQuery.ajax({
+                    type: "POST",
+                    data: JSON.stringify({ action: 'filter', parts: jsObject.parts, post_type: posttype, meta_value: metavalue }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    url: jsObject.root + jsObject.parts.root + '/v1/' + jsObject.parts.type,
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader('X-WP-Nonce', jsObject.nonce )
+                    }
+                })
+                    .done(function(data){
+                        console.log(data)
+                        window.load_list( data )
+                    })
+                    .fail(function(e) {
+                        console.log(e)
+                    })
+            }
+
+
         </script>
         <?php
         return true;
@@ -321,39 +405,21 @@ class DT_Prayer_Calendar_Magic_Link
     public function body(){
         ?>
         <div id="custom-style"></div>
-        <style>
-            /*#wrapper {*/
-            /*    margin-top: 1em;*/
-            /*}*/
-            #content {
-                overflow-x: hidden;
-            }
-            .prayer-list-wrapper {
-                background-color: #8BC34A;
-            }
-            .prayer-list {
-                padding: 1.5em .5em;
-                border:1px solid lightgrey;
-                background-color: white;
-                font-size: 1.3em;
-                font-weight: bolder;
-            }
-            .checked-off {
-                margin-left: 40px;
-            }
-        </style>
+
         <!-- title -->
         <div class="title-bar">
             <div class="title-bar-left">
                 <button class="menu-icon" type="button" data-open="offCanvasLeft"></button>
             </div>
-            <div class="center"><span class="title-bar-title">Prayer Calendar</span></div>
+            <div class="center"><span class="title-bar-title"><a href="" id="title_link">Prayer Calendar</a></span></div>
             <div class="title-bar-right">
                 <button class="menu-icon" type="button" data-open="offCanvasRight"></button>
             </div>
         </div>
+
         <!-- off canvas menus -->
         <div class="off-canvas-wrapper">
+            <!-- Left Canvas -->
             <div class="off-canvas position-left" id="offCanvasLeft" data-off-canvas data-transition="push">
                 <button class="close-button" aria-label="Close alert" type="button" data-close>
                     <span aria-hidden="true">&times;</span>
@@ -361,17 +427,44 @@ class DT_Prayer_Calendar_Magic_Link
                 <div class="grid-x grid-padding-x">
                     <div class="cell center" style="padding-top: 1em;"><h2>Filters</h2></div>
                     <div class="cell"><hr></div>
-                    <?php
-                    $filters = $this->get_filter_counts();
-                    $post_settings = DT_Posts::get_post_field_settings('contacts' );
-                    if ( isset( $post_settings['prayer_calendar_app']['default'] ) ){
-                        foreach ( $post_settings[$this->root]['default'] as $key => $filter ) {
-                            ?><div class="cell"><?php echo  $filter['label'] ?> <?php echo (isset($filters[$key] ) ? $filters[$key] : 0 ) ?></div><?php
+                    <div class="cell">
+                        <h2>Ordered Lists</h2>
+                        <ul>
+                            <li class="basic_lists" data-type="today">Today's List</li>
+                            <li class="basic_lists" data-type="oldest">Oldest</li>
+                            <li class="basic_lists" data-type="newest">Newest</li>
+                            <li class="basic_lists" data-type="least">Least Prayed For</li>
+                            <li class="basic_lists" data-type="most">Most Prayed For</li>
+                        </ul>
+                    </div>
+                    <div class="cell"><hr></div>
+                    <div class="cell">
+                        <h2>Categories</h2>
+                        <?php
+                        $filters = $this->get_filter_counts();
+                        if ( ! empty( $filters ) ){
+                            foreach ( $filters as $p_type => $list ) {
+                                ?>
+                                <ul style="margin-left:0;">
+                                <li><?php echo ucwords( str_replace( '_', ' ', $p_type ) );  ?>
+                                    <ul>
+                                        <?php
+                                        foreach( $list as $key => $item ) {
+                                            ?><li class="filter_link" data-posttype="<?php echo $p_type ?>" data-meta-value="<?php echo $key ?>"><a href="#"><?php echo ucwords( str_replace( '_', ' ', $key ) ) ?> (<?php echo $item ?>) </a></li><?php
+                                        }
+                                        ?>
+                                    </ul>
+                                </li>
+                                </ul>
+                                <?php
+                            }
                         }
-                    }
-                    ?>
+                        ?>
+                    </div>
                 </div>
             </div>
+
+            <!-- Right Canvas -->
             <div class="off-canvas position-right" id="offCanvasRight" data-off-canvas data-transition="push">
                 <button class="close-button" aria-label="Close alert" type="button" data-close>
                     <span aria-hidden="true">&times;</span>
@@ -385,15 +478,14 @@ class DT_Prayer_Calendar_Magic_Link
                 </div>
             </div>
         </div>
+
         <!-- body-->
         <div id="wrapper">
-            <div class="grid-x" id="content"><span class="loading-spinner active" style="margin: 1em;"></span><!-- javascript container --></div>
+            <div class="grid-x" id="content"></div>
+            <span class="loading-spinner active" style="margin: 1em;"></span><!-- javascript container -->
+            <div class="center"><span>more lists</span></div>
         </div>
-        <script>
-            jQuery(document).ready(function($){
-                window.get_list()
-            })
-        </script>
+
         <?php
     }
 
@@ -426,6 +518,8 @@ class DT_Prayer_Calendar_Magic_Link
         switch ( $action ) {
             case 'get':
                 return $this->endpoint_get( $params['parts'] );
+            case 'filter':
+                return $this->endpoint_filter( $params['parts'], $params['post_type'], $params['meta_value'] );
             case 'log':
                 if ( ! isset( $params['post_id'] ) ){
                     return new WP_Error( __METHOD__, "Missing parameters", [ 'status' => 400 ] );
@@ -442,56 +536,112 @@ class DT_Prayer_Calendar_Magic_Link
         $data = [
             'lists' => [
                 'today' => [],
-                'week' => [],
-                'month' => [],
-                'auto' => [],
+                'weekly' => [],
+                'monthly' => [],
             ],
             'counts' => [
                 'today' => 0,
-                'week' => 0,
-                'month' => 0,
-                'auto' => 0,
+                'weekly' => 0,
+                'monthly' => 0,
             ],
         ];
 
+        $day_number = date('N', time() );
+        $day_key = 'every_' .  $day_number;
+
+        $time_at_start_of_day = strtotime('today');
+
         $data['lists']['today'] = $wpdb->get_results( $wpdb->prepare( "
-            SELECT p.ID as post_id, p.post_title as name
+            SELECT p.ID as post_id, p.post_title as name, p.post_type
             FROM $wpdb->dt_post_user_meta pum
             JOIN $wpdb->posts p ON p.ID=pum.post_id
-            WHERE pum.user_id = %s AND pum.meta_key = %s
-        ", $parts['post_id'], $this->root ), ARRAY_A );
+            WHERE pum.user_id = %s
+                AND pum.meta_key = %s
+                AND ( pum.meta_value = 'every_day' OR pum.meta_value = %s )
+                AND pum.post_id NOT IN (
+                    SELECT DISTINCT r.post_id
+                    FROM $wpdb->dt_reports r
+                    WHERE r.timestamp > %d
+                      AND r.parent_id = %d
+                    AND r.type = 'prayer_calendar_app'
+                    AND r.subtype = 'daily'
+                )
+        ", $parts['post_id'], $this->key, $day_key, $time_at_start_of_day, $parts['post_id'] ), ARRAY_A );
         if ( ! empty( $data['lists']['today'] ) ){
             $data['counts']['today'] = count($data['lists']['today']);
         }
 
-        $data['lists']['week'] = $wpdb->get_results( $wpdb->prepare( "
-            SELECT p.ID as post_id, p.post_title as name
+        $time_a_week_ago = strtotime('1 week ago');
+        $data['lists']['weekly'] = $wpdb->get_results( $wpdb->prepare( "
+            SELECT p.ID as post_id, p.post_title as name, p.post_type
             FROM $wpdb->dt_post_user_meta pum
             JOIN $wpdb->posts p ON p.ID=pum.post_id
-            WHERE pum.user_id = %s AND pum.meta_key = %s
-        ", $parts['post_id'], $this->root ), ARRAY_A );
-        if ( ! empty( $data['lists']['week'] ) ){
-            $data['counts']['week'] = count($data['lists']['week']);
+            WHERE pum.user_id = %s
+                AND pum.meta_key = %s
+                AND pum.meta_value = 'every_week'
+                AND pum.post_id NOT IN (
+                    SELECT DISTINCT r.post_id
+                    FROM $wpdb->dt_reports r
+                    WHERE r.timestamp > %d
+                      AND r.parent_id = %d
+                    AND r.type = 'prayer_calendar_app'
+                    AND r.subtype = 'daily'
+                )
+        ", $parts['post_id'], $this->key, $time_a_week_ago, $parts['post_id'] ), ARRAY_A );
+        if ( ! empty( $data['lists']['weekly'] ) ){
+            $data['counts']['weekly'] = count($data['lists']['weekly']);
         }
 
-        $data['lists']['month'] = $wpdb->get_results( $wpdb->prepare( "
-            SELECT p.ID as post_id, p.post_title as name
+        $time_a_month_ago = strtotime('1 month ago');
+        $data['lists']['monthly'] = $wpdb->get_results( $wpdb->prepare( "
+            SELECT p.ID as post_id, p.post_title as name, p.post_type
             FROM $wpdb->dt_post_user_meta pum
             JOIN $wpdb->posts p ON p.ID=pum.post_id
-            WHERE pum.user_id = %s AND pum.meta_key = %s
-        ", $parts['post_id'], $this->root ), ARRAY_A );
-        if ( ! empty( $data['lists']['month'] ) ){
-            $data['counts']['month'] = count($data['lists']['month']);
+            WHERE pum.user_id = %s
+                AND pum.meta_key = %s
+                AND pum.meta_value = 'every_month'
+                AND pum.post_id NOT IN (
+                    SELECT DISTINCT r.post_id
+                    FROM $wpdb->dt_reports r
+                    WHERE r.timestamp > %d
+                    AND r.parent_id = %d
+                    AND r.type = 'prayer_calendar_app'
+                    AND r.subtype = 'daily'
+                )
+        ", $parts['post_id'], $this->key, $time_a_month_ago, $parts['post_id'] ), ARRAY_A );
+        if ( ! empty( $data['lists']['monthly'] ) ){
+            $data['counts']['monthly'] = count($data['lists']['monthly']);
         }
 
-        $data['lists']['auto'] = $wpdb->get_results( $wpdb->prepare( "
-            SELECT p.ID as post_id, p.post_title as name
+        return $data;
+    }
+
+    public function endpoint_filter( $parts, $post_type, $meta_value ) {
+        global $wpdb;
+
+        $data = [
+            'lists' => [],
+            'counts' => [],
+        ];
+
+        if ( ! isset( $data['lists'][$meta_value]) ) {
+            $data['lists'][$meta_value] = [];
+        }
+        if ( ! isset( $data['counts'][$meta_value]) ) {
+            $data['counts'][$meta_value] = 0;
+        }
+
+        $data['lists'][$meta_value] = $wpdb->get_results( $wpdb->prepare( "
+            SELECT p.ID as post_id, p.post_title as name, p.post_type
             FROM $wpdb->dt_post_user_meta pum
             JOIN $wpdb->posts p ON p.ID=pum.post_id
-            WHERE pum.user_id = %s AND pum.meta_key = %s
-        ", $parts['post_id'], $this->root ), ARRAY_A );
-        if ( ! empty( $data['lists']['auto'] ) ){
-            $data['counts']['auto'] = count($data['lists']['auto']);
+            WHERE pum.user_id = %s
+              AND pum.meta_key = %s
+              AND p.post_type = %s
+              AND pum.meta_value = %s
+        ", $parts['post_id'], $this->key, $post_type, $meta_value ), ARRAY_A );
+        if ( ! empty( $data['lists'][$meta_value] ) ){
+            $data['counts'][$meta_value] = count($data['lists'][$meta_value]);
         }
 
         return $data;
@@ -512,51 +662,54 @@ class DT_Prayer_Calendar_Magic_Link
         ];
 
         // get geolocation of the contact, not the user
-        $contact = DT_Posts::get_post('contacts', $post_id, false, false, true );
-        if ( isset( $contact['location_grid_meta'] ) ) {
-            $location = $contact['location_grid_meta'][0];
-            $args['lng'] = $location['lng'];
-            $args['lat'] = $location['lat'];
-            $args['level'] = $location['level'];
-            $args['label'] = $location['label'];
-            $args['grid_id'] = $location['grid_id'];
-        } else if ( isset( $contact['location_grid'] ) ) {
-            $location = $contact['location_grid'][0];
-            $grid_record = Disciple_Tools_Mapping_Queries::get_by_grid_id($location['grid_id']);
-            $args['lng'] = $grid_record['lng'];
-            $args['lat'] = $grid_record['lat'];
-            $args['level'] = $grid_record['level'];
-            $args['label'] = $location['label'];
-            $args['grid_id'] = $location['grid_id'];
+        $post_object = DT_Posts::get_post( $post_type, $post_id, false, false, true );
+        if ( isset( $post_object['location_grid_meta'] ) ) {
+            $location = $post_object['location_grid_meta'][0];
+            if ( isset( $location['lng'] ) ) {
+                $args['lng'] = $location['lng'];
+                $args['lat'] = $location['lat'];
+                $args['level'] = $location['level'];
+                $args['label'] = $location['label'];
+                $args['grid_id'] = $location['grid_id'];
+            }
+        } else if ( isset( $post_object['location_grid'][0] ) ) {
+            $location = $post_object['location_grid'][0];
+            $grid_record = Disciple_Tools_Mapping_Queries::get_by_grid_id($location['id']);
+            if ( isset( $grid_record['lng'] ) ) {
+                $args['lng'] = $grid_record['lng'];
+                $args['lat'] = $grid_record['lat'];
+                $args['level'] = $grid_record['level'];
+                $args['label'] = $location['label'];
+                $args['grid_id'] = $location['grid_id'];
+            }
         }
 
-
         return Disciple_Tools_Reports::insert( $args );
-
     }
 
     public function get_filter_counts() {
-        $contacts = DT_Prayer_Calendar_Tile::instance()->get_my_prayer_counts( 'contacts' );
-        $groups = DT_Prayer_Calendar_Tile::instance()->get_my_prayer_counts( 'contacts' );
+        global $wpdb;
+        $current_user = get_current_user_id();
+
+        $results = $wpdb->get_results( $wpdb->prepare( "
+            SELECT p.post_type, pum.meta_value, count(pum.id) as count
+                FROM $wpdb->dt_post_user_meta pum
+                JOIN $wpdb->posts p ON p.ID=pum.post_id
+                WHERE
+                pum.user_id = %d
+                AND pum.meta_key = %s
+                GROUP BY p.post_type, pum.meta_value
+        ", $current_user, $this->key ), ARRAY_A);
 
         $filters = [];
-        if ( ! empty( $contacts ) ){
-            foreach( $contacts as $item ){
-                if ( ! isset( $filters[$item['category']] ) ){
-                    $filters[$item['category']] = 0;
+        if ( ! empty( $results ) ) {
+            foreach( $results as $result ){
+                if ( ! isset( $filters[$result['post_type']][$result['meta_value']] ) ){
+                    $filters[$result['post_type']][$result['meta_value']] = 0;
                 }
-                $filters[$item['category']] = $filters[$item['category']] + $item['count'];
+                $filters[$result['post_type']][$result['meta_value']] = $filters[$result['post_type']][$result['meta_value']] + $result['count'];
             }
         }
-        if ( ! empty( $groups ) ){
-            foreach( $groups as $item ){
-                if ( ! isset( $filters[$item['category']] ) ){
-                    $filters[$item['category']] = 0;
-                }
-                $filters[$item['category']] = $filters[$item['category']] + $item['count'];
-            }
-        }
-
 
         return $filters;
     }
