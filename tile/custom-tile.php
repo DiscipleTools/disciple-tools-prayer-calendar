@@ -25,7 +25,7 @@ class DT_Prayer_Calendar_Tile
      */
     public function dt_custom_fields( array $fields, string $post_type = "" ) {
 
-        if ( in_array($post_type, ['contacts','groups','trainings'] ) ){
+        if ( in_array( $post_type, [ 'contacts','groups','trainings' ] ) ){
             $fields[$this->token] = [
                 'name' => __( 'Prayer Calendar', 'disciple_tools' ),
                 'type' => 'key_select',
@@ -97,7 +97,7 @@ class DT_Prayer_Calendar_Tile
 
     public function dt_user_list_filters( $filters, $post_type ){
 
-        if ( in_array($post_type, ['contacts','groups','trainings'] )  ) {
+        if ( in_array( $post_type, [ 'contacts','groups','trainings' ] ) ) {
             $key = get_user_option( $this->token );
             if ( ! empty( $key ) ) {
                 $counts = $this->get_my_prayer_counts( $post_type );
@@ -105,18 +105,18 @@ class DT_Prayer_Calendar_Tile
                 $total_prayer_items = 0;
                 foreach ($counts as $count) {
                     $total_prayer_items += $count["count"];
-                    dt_increment($meta_value_counts[$count["meta_value"]], $count["count"]);
+                    dt_increment( $meta_value_counts[$count["meta_value"]], $count["count"] );
                 }
 
                 $filters["tabs"][] = [
                     "key" => $this->token,
-                    "label" => _x("Prayer Calendar", 'List Filters', 'disciple_tools'),
+                    "label" => _x( "Prayer Calendar", 'List Filters', 'disciple_tools' ),
                     "count" => $total_prayer_items,
                     "order" => 20
                 ];
 
                 $post_type_fields = DT_Posts::get_post_field_settings( $post_type );
-                foreach( $post_type_fields[$this->token]['default'] as $key => $item ){
+                foreach ( $post_type_fields[$this->token]['default'] as $key => $item ){
                     if ( 'none' === $key ){
                         continue;
                     }
@@ -126,7 +126,7 @@ class DT_Prayer_Calendar_Tile
                         'tab' => $this->token,
                         'name' => $item['label'],
                         'query' => [
-                            $this->token => [$key],
+                            $this->token => [ $key ],
                             'sort' => 'name'
                         ],
                         "count" => $meta_value_counts[$key] ?? 0,

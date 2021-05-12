@@ -1,30 +1,25 @@
 [![Build Status](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-calendar.svg?branch=master)](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-calendar)
 
-# Disciple Tools - Name
+# Disciple Tools - Prayer Calendar
 
-Description Description Description Description Description Description Description
-Description Description Description Description Description Description Description
+This project is not released.
 
 ## Purpose
 
-Purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose
-Purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose
-
-Purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose
-Purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose purpose
+This project creates a user driving app for adding contacts, groups, and trainings to a daily prayer calender
+micro app. This way a multiplier can pray over key elements of their disciple making on a daily basis
+from data living in Disciple Tools.
 
 ## Usage
 
 #### Will Do
 
-- Item
-- Item
-- Item
+- Make a daily, weekly, monthly prayer list from contacts, groups, and trainings
+- Make a micro app, enabled in the settings, for a multiplier to put on their phone home screen
 
 #### Will Not Do
 
-- Item
-- Item
+- Pray for you
 
 ## Requirements
 
@@ -43,8 +38,3 @@ in the [Discussions](https://github.com/DiscipleTools/disciple-tools-prayer-cale
 code contributions are welcome using the [Pull Request](https://github.com/DiscipleTools/disciple-tools-prayer-calendar/pulls)
 system for git. For a more details on contribution see the
 [contribution guidelines](https://github.com/DiscipleTools/disciple-tools-prayer-calendar/blob/master/CONTRIBUTING.md).
-
-
-## Screenshots
-
-![screenshot](documentation/community/starter-banners/banner-blue-green.png)
