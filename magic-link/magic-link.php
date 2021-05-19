@@ -70,8 +70,6 @@ class DT_Prayer_Calendar_Magic_Link
             add_action( 'dt_blank_body', [ $this, 'body' ] );
         }
 
-        add_filter('get_site_icon_url', function(){ return true;
-        });
 
         // load if valid url
         add_filter( "dt_blank_title", [ $this, "_browser_tab_title" ] );
@@ -152,6 +150,7 @@ class DT_Prayer_Calendar_Magic_Link
     public function _wp_enqueue_scripts(){
         $url = dt_get_url_path();
         if ( strpos( $url, $this->root . '/' . $this->type ) !== false ) {
+            wp_enqueue_script( 'lodash' );
             wp_enqueue_script( 'jquery-ui' );
             wp_enqueue_script( 'jquery-touch-punch' );
 
@@ -163,9 +162,6 @@ class DT_Prayer_Calendar_Magic_Link
                 'jquery',
                 'jquery-touch-punch'
             ], filemtime( plugin_dir_path( __FILE__ ) .'jquery.p2r.min.js' ), true );
-
-            wp_enqueue_script( 'serviceWorker', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'serviceworker.js', [
-            ], filemtime( plugin_dir_path( __FILE__ ) .'serviceworker.js' ), false );
         }
     }
     public function _header(){
@@ -188,9 +184,6 @@ class DT_Prayer_Calendar_Magic_Link
             'jquery',
             'jquery-ui',
             'lodash',
-            'serviceWorker',
-//            'moment',
-//            'datepicker',
             'site-js',
             'shared-functions',
             'mapbox-gl',
@@ -198,6 +191,9 @@ class DT_Prayer_Calendar_Magic_Link
             'mapbox-search-widget',
             'google-search-widget',
 //            'jquery-cookie',
+//            'serviceWorker',
+//            'moment',
+//            'datepicker',
             'jquery-touch-punch',
             'prayer_calendar_app_daily',
             'p2r'
@@ -220,8 +216,8 @@ class DT_Prayer_Calendar_Magic_Link
             'foundation-css',
             'jquery-ui-site-css',
             'site-css',
+            'mapbox-gl-css',
 //            'datepicker-css',
-            'mapbox-gl-css'
         ];
 
         global $wp_styles;
@@ -285,6 +281,10 @@ class DT_Prayer_Calendar_Magic_Link
                 cursor: pointer;
                 color: #3f729b;
             }
+            .list-item {
+                cursor: pointer;
+                color: #3f729b;
+            }
         </style>
         <?php
     }
@@ -292,29 +292,27 @@ class DT_Prayer_Calendar_Magic_Link
 
         // add manifest for pwa
         ?>
-        <link rel="manifest" href="<?php echo trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'] . '/manifest' ?>">
+<!--        <link rel="manifest" href="--><?php //echo trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'] . '/manifest' ?><!--">-->
         <script>
             let jsObject = [<?php echo json_encode([
                 'map_key' => DT_Mapbox_API::get_key(),
                 'root' => esc_url_raw( rest_url() ),
                 'nonce' => wp_create_nonce( 'wp_rest' ),
                 'parts' => $this->parts,
-                'list' => $this->endpoint_filter_lists($this->parts),
                 'translations' => [
                     'add' => __( 'Add Prayer Calendar', 'disciple_tools' ),
                 ],
             ]) ?>][0]
 
 
-            if ("serviceWorker" in navigator) {
-                window.addEventListener("load", function() {
-                    navigator.serviceWorker
-                        .register("<?php echo trailingslashit( plugin_dir_url( __FILE__ ) ) . 'serviceworker.js' ?>")
-                        .then(res => console.log("service worker registered"))
-                        .catch(err => console.log("service worker not registered", err))
-                })
-            }
-
+            //if ("serviceWorker" in navigator) {
+            //    window.addEventListener("load", function() {
+            //        navigator.serviceWorker
+            //            .register("<?php //echo trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.js' ?>//")
+            //            .then(res => console.log("service worker registered"))
+            //            .catch(err => console.log("service worker not registered", err))
+            //    })
+            //}
 
         </script>
         <?php
@@ -388,6 +386,8 @@ class DT_Prayer_Calendar_Magic_Link
         $action = sanitize_text_field( wp_unslash( $params['action'] ) );
 
         switch ( $action ) {
+            case 'get_all':
+                return $this->endpoint_get_all( $params['parts'] );
             case 'get':
                 return $this->endpoint_get( $params['parts'] );
             case 'filter_list':
@@ -402,6 +402,50 @@ class DT_Prayer_Calendar_Magic_Link
             default:
                 return new WP_Error( __METHOD__, "Missing valid action", [ 'status' => 400 ] );
         }
+    }
+
+    public function endpoint_get_all( $parts ) {
+        global $wpdb;
+        $data = [
+            'list' => [],
+            'totals' => [],
+        ];
+
+        $results = $wpdb->get_results( $wpdb->prepare( "
+            SELECT p.ID as post_id,
+                   p.post_title as name,
+                   p.post_type,
+                   pum.id,
+                   pum.user_id,
+                   pum.meta_value as type,
+                   (
+                    SELECT r.timestamp
+                    FROM $wpdb->dt_reports r
+                    WHERE r.parent_id = 2 AND r.post_id = p.ID
+                    ORDER BY timestamp LIMIT 1
+                    ) as last_report
+            FROM $wpdb->dt_post_user_meta pum
+            JOIN $wpdb->posts p ON p.ID=pum.post_id
+            WHERE pum.user_id = %s
+              AND pum.meta_key = %s
+        ", $parts['post_id'], $this->key ), ARRAY_A );
+
+        foreach( $results as $item ) {
+
+            $item['last_report'] = (int) $item['last_report'];
+            $item['id'] = (int) $item['id'];
+            $item['post_id'] = (int) $item['post_id'];
+            $item['user_id'] = (int) $item['user_id'];
+
+            $data['list'][$item['post_id']] = $item;
+
+            if ( ! isset($item['post_type'] ) ) {
+                $data['totals'][$item['post_type']] = 0;
+            }
+            $data['totals'][$item['post_type']]++;
+        }
+
+        return $data;
     }
 
     public function endpoint_get( $parts ) {
