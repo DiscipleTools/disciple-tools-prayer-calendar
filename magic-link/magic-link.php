@@ -62,11 +62,21 @@ class DT_Prayer_Calendar_Magic_Link
             return;
         }
 
+        if ( $this->magic->is_valid_key_url( $this->type ) && 'manifest' === $this->parts['action'] ) {
+            add_filter( 'dt_json_access', [ $this, '_has_access' ] );
+            add_action( 'dt_json_content', [ $this, 'manifest_json' ] );
+        }
+        else {
+            add_action( 'dt_blank_body', [ $this, 'body' ] );
+        }
+
+        add_filter('get_site_icon_url', function(){ return true;
+        });
+
         // load if valid url
         add_filter( "dt_blank_title", [ $this, "_browser_tab_title" ] );
         add_action( 'dt_blank_head', [ $this, '_header' ] );
         add_action( 'dt_blank_footer', [ $this, '_footer' ] );
-        add_action( 'dt_blank_body', [ $this, 'body' ] ); // body for no post key
 
         // load page elements
         add_action( 'wp_print_scripts', [ $this, '_print_scripts' ], 1500 );
@@ -77,6 +87,8 @@ class DT_Prayer_Calendar_Magic_Link
         add_filter( 'dt_blank_access', [ $this, '_has_access' ] );
         add_filter( 'dt_allow_non_login_access', function(){ return true;
         }, 100, 1 );
+
+
     }
 
     public function _register_type( array $types ) : array {
@@ -90,6 +102,7 @@ class DT_Prayer_Calendar_Magic_Link
             'meta_key' => $this->root . '_' . $this->type,
             'actions' => [
                 '' => 'Manage',
+                'manifest' => 'Manifest',
             ],
             'post_type' => $this->post_type,
         ];
@@ -117,7 +130,10 @@ class DT_Prayer_Calendar_Magic_Link
 
         // test 4 : valid action requested
         $actions = $this->magic->list_actions( $parts['type'] );
-        if ( isset( $actions[ $parts['action'] ] ) ){
+        if ( isset( $actions[ $parts['action'] ] ) && 'manifest' === $parts['action'] ){
+            $template_for_url[ $parts['root'] . '/'. $parts['type'] . '/' . $parts['public_key'] . '/' . $parts['action'] ] = 'template-blank-json.php';
+        }
+        else if ( isset( $actions[ $parts['action'] ] ) ){
             $template_for_url[ $parts['root'] . '/'. $parts['type'] . '/' . $parts['public_key'] . '/' . $parts['action'] ] = 'template-blank.php';
         }
 
@@ -138,6 +154,18 @@ class DT_Prayer_Calendar_Magic_Link
         if ( strpos( $url, $this->root . '/' . $this->type ) !== false ) {
             wp_enqueue_script( 'jquery-ui' );
             wp_enqueue_script( 'jquery-touch-punch' );
+
+            wp_enqueue_script( $this->key, trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.js', [
+                'jquery',
+                'jquery-touch-punch'
+            ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.js' ), true );
+            wp_enqueue_script( 'p2r', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'jquery.p2r.min.js', [
+                'jquery',
+                'jquery-touch-punch'
+            ], filemtime( plugin_dir_path( __FILE__ ) .'jquery.p2r.min.js' ), true );
+
+            wp_enqueue_script( 'serviceWorker', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'serviceworker.js', [
+            ], filemtime( plugin_dir_path( __FILE__ ) .'serviceworker.js' ), false );
         }
     }
     public function _header(){
@@ -160,16 +188,19 @@ class DT_Prayer_Calendar_Magic_Link
             'jquery',
             'jquery-ui',
             'lodash',
-            'moment',
-            'datepicker',
+            'serviceWorker',
+//            'moment',
+//            'datepicker',
             'site-js',
             'shared-functions',
             'mapbox-gl',
             'mapbox-cookie',
             'mapbox-search-widget',
             'google-search-widget',
-            'jquery-cookie',
-            'jquery-touch-punch'
+//            'jquery-cookie',
+            'jquery-touch-punch',
+            'prayer_calendar_app_daily',
+            'p2r'
         ];
 
         global $wp_scripts;
@@ -189,7 +220,7 @@ class DT_Prayer_Calendar_Magic_Link
             'foundation-css',
             'jquery-ui-site-css',
             'site-css',
-            'datepicker-css',
+//            'datepicker-css',
             'mapbox-gl-css'
         ];
 
@@ -258,185 +289,31 @@ class DT_Prayer_Calendar_Magic_Link
         <?php
     }
     public function header_javascript(){
+
+        // add manifest for pwa
         ?>
+        <link rel="manifest" href="<?php echo trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'] . '/manifest' ?>">
         <script>
             let jsObject = [<?php echo json_encode([
                 'map_key' => DT_Mapbox_API::get_key(),
                 'root' => esc_url_raw( rest_url() ),
                 'nonce' => wp_create_nonce( 'wp_rest' ),
                 'parts' => $this->parts,
+                'list' => $this->endpoint_filter_lists($this->parts),
                 'translations' => [
                     'add' => __( 'Add Prayer Calendar', 'disciple_tools' ),
                 ],
             ]) ?>][0]
 
-            jQuery(document).ready(function($){
-                clearInterval(window.fiveMinuteTimer)
-                set_title_url()
-                window.get_list()
 
-                $('.filter_link').on('click', function(e){
-                    let metavalue = $(this).data('meta-value')
-                    let posttype = $(this).data('posttype')
-                    $('#content').empty()
-                    $('.loading-spinner').addClass('active')
-                    window.get_filter( posttype, metavalue )
-                    $('#offCanvasLeft').foundation('close')
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", function() {
+                    navigator.serviceWorker
+                        .register("<?php echo trailingslashit( plugin_dir_url( __FILE__ ) ) . 'serviceworker.js' ?>")
+                        .then(res => console.log("service worker registered"))
+                        .catch(err => console.log("service worker not registered", err))
                 })
-                $('.basic_lists').on('click', function(e){
-                    let type = $(this).data('type')
-                    console.log(type)
-                })
-
-                // $('#drag-refresh').draggable({
-                //     axis: "y",
-                //     revert: true,
-                //     start: function(e){
-                //         jQuery('.loading-spinner').addClass('active')
-                //         window.get_list()
-                //     }
-                // })
-
-            })
-
-            function set_title_url(){
-                jQuery('#title_link').prop('href', '/' + jsObject.parts.root + '/' + jsObject.parts.type + '/' + jsObject.parts.public_key )
             }
-
-            window.get_list = () => {
-                jQuery.ajax({
-                    type: "POST",
-                    data: JSON.stringify({ action: 'get', parts: jsObject.parts }),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    url: jsObject.root + jsObject.parts.root + '/v1/' + jsObject.parts.type,
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('X-WP-Nonce', jsObject.nonce )
-                    }
-                })
-                    .done(function(data){
-                        window.load_list( data )
-                    })
-                    .fail(function(e) {
-                        console.log(e)
-                        jQuery('#error').html(e)
-                    })
-
-                // jQuery.ajax({
-                //     type: "POST",
-                //     data: JSON.stringify({ action: 'filter_list', parts: jsObject.parts }),
-                //     contentType: "application/json; charset=utf-8",
-                //     dataType: "json",
-                //     url: jsObject.root + jsObject.parts.root + '/v1/' + jsObject.parts.type,
-                //     beforeSend: function (xhr) {
-                //         xhr.setRequestHeader('X-WP-Nonce', jsObject.nonce )
-                //     }
-                // })
-                //     .done(function(data){
-                //         window.load_filter_list( data )
-                //     })
-                //     .fail(function(e) {
-                //         console.log(e)
-                //         jQuery('#error').html(e)
-                //     })
-            }
-
-            window.log_prayer_action = ( post_id ) => {
-                // note parts.post_id is the user_id, not the post_id
-                jQuery.ajax({
-                    type: "POST",
-                    data: JSON.stringify({ action: 'log', parts: jsObject.parts, post_id: post_id }),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    url: jsObject.root + jsObject.parts.root + '/v1/' + jsObject.parts.type,
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('X-WP-Nonce', jsObject.nonce )
-                    }
-                })
-                    .done(function(data){
-                        console.log(data)
-                    })
-                    .fail(function(e) {
-                        console.log(e)
-                    })
-            }
-
-            window.load_list = ( data ) => {
-                let content = jQuery('#content')
-                let spinner = jQuery('.loading-spinner')
-                let icon = ''
-                content.empty()
-                jQuery.each(data.lists, function(i,v){
-                    let label = i.replace('_', ' ')
-                    content.append(`
-                        <div class="cell center" style="background:whitesmoke;text-transform:capitalize;">${label} <span>(${data.counts[i]})</span></div>
-                        `)
-
-                    jQuery.each(v, function(ii,vv){
-                        icon = ''
-                        if ( 'contacts' === vv.post_type ) {
-                            icon = 'fi-torso'
-                        } else if ( 'groups' === vv.post_type ) {
-                            icon = 'fi-torsos-all'
-                        } else if ( 'trainings' === vv.post_type ) {
-                            icon = 'fi-results-demographics'
-                        }
-
-                        content.append(`
-                         <div class="cell prayer-list-wrapper">
-                            <div class="draggable ui-widget-content prayer-list" data-value="${vv.post_id}" id="item-${vv.post_id}">
-                                <i class="${icon}"></i> <span class="item-name">${vv.name}</span>
-                            </div>
-                         </div>
-                     `)
-                    })
-                })
-
-                let prayer_list = jQuery('.prayer-list')
-                prayer_list.draggable({
-                    axis: "x",
-                    revert: true,
-                    stop: function(e) {
-                        let v = jQuery(this).data('value')
-                        window.log_prayer_action(v)
-                        jQuery('#item-'+v).addClass('checked-off')
-                    }
-                })
-                prayer_list.click(function(e){
-                    let v = jQuery(this).data('value')
-                    window.log_prayer_action(v)
-                    jQuery('#item-'+v).addClass('checked-off')
-                })
-
-                spinner.removeClass('active')
-
-            }
-
-            window.load_filter_list = ( data ) => {
-
-            }
-
-
-            window.get_filter = ( posttype, metavalue ) => {
-                jQuery.ajax({
-                    type: "POST",
-                    data: JSON.stringify({ action: 'filter', parts: jsObject.parts, post_type: posttype, meta_value: metavalue }),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    url: jsObject.root + jsObject.parts.root + '/v1/' + jsObject.parts.type,
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader('X-WP-Nonce', jsObject.nonce )
-                    }
-                })
-                    .done(function(data){
-                        window.load_list( data )
-                    })
-                    .fail(function(e) {
-                        console.log(e)
-                    })
-            }
-
-
 
 
         </script>
@@ -444,95 +321,44 @@ class DT_Prayer_Calendar_Magic_Link
         return true;
     }
 
-
     public function body(){
-        ?>
-        <div id="custom-style"></div>
+        include('prayer-calendar-daily.html');
+    }
 
-        <div id="spinner-background" class="loading-spinner"></div>
+    public function manifest_json() {
 
-
-            <!-- title -->
-            <div class="title-bar">
-                <div class="title-bar-left">
-                    <button class="menu-icon" type="button" data-open="offCanvasLeft"></button>
-                </div>
-                <div class="center"><span class="title-bar-title"><a href="" id="title_link">Prayer Calendar</a></span></div>
-                <!-- @todo add right off canvas -->
-                <div class="title-bar-right">
-<!--                    <button class="menu-icon" type="button" data-open="offCanvasRight"></button>-->
-                </div>
-            </div>
-
-            <!-- off canvas menus -->
-            <div class="off-canvas-wrapper">
-                <!-- Left Canvas -->
-                <div class="off-canvas position-left" id="offCanvasLeft" data-off-canvas data-transition="push">
-                    <button class="close-button" aria-label="Close alert" type="button" data-close>
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <div class="grid-x grid-padding-x">
-                        <div class="cell center" style="padding-top: 1em;"><h2>Filters</h2></div>
-                        <div class="cell"><hr></div>
-<!--                        <div class="cell">-->
-<!--                            <h2>Ordered Lists</h2>-->
-<!--                            <ul>-->
-<!--                                <li class="basic_lists" data-type="today">Today's List</li>-->
-<!--                                <li class="basic_lists" data-type="oldest">Oldest</li>-->
-<!--                                <li class="basic_lists" data-type="newest">Newest</li>-->
-<!--                                <li class="basic_lists" data-type="least">Least Prayed For</li>-->
-<!--                                <li class="basic_lists" data-type="most">Most Prayed For</li>-->
-<!--                            </ul>-->
-<!--                        </div>-->
-<!--                        <div class="cell"><hr></div>-->
-                        <div class="cell">
-                            <h2>Categories</h2>
-                            <?php
-                            $filters = $this->get_filter_counts();
-                            if ( ! empty( $filters ) ){
-                                foreach ( $filters as $p_type => $list ) {
-                                    ?>
-                                    <ul style="margin-left:0;">
-                                        <li><?php echo esc_html( ucwords( str_replace( '_', ' ', $p_type ) ) );  ?>
-                                            <ul>
-                                                <?php
-                                                foreach ( $list as $key => $item ) {
-                                                    ?><li class="filter_link" data-posttype="<?php echo esc_attr( $p_type ) ?>" data-meta-value="<?php echo esc_attr( $key ) ?>"><a href="#"><?php echo esc_html( ucwords( str_replace( '_', ' ', $key ) ) ) ?> (<?php echo esc_html( $item ) ?>) </a></li><?php
-                                                }
-                                                ?>
-                                            </ul>
-                                        </li>
-                                    </ul>
-                                    <?php
-                                }
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Canvas -->
-                <div class="off-canvas position-right" id="offCanvasRight" data-off-canvas data-transition="push">
-                    <button class="close-button" aria-label="Close alert" type="button" data-close>
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <div class="grid-x grid-padding-x">
-                        <div class="cell center" style="padding-top: 1em;"><h2>Instructions</h2></div>
-                        <div class="cell"><hr></div>
-                        <div class="cell">
-                            <a href="<?php echo esc_url( site_url() ) ?>">Go to full system</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- body-->
-            <div id="wrapper">
-                <div class="grid-x" id="content"></div>
-                <span class="loading-spinner active" style="margin: 1em;"></span><!-- javascript container -->
-                <div class="center"><span onclick="jQuery('#offCanvasLeft').foundation('open');" class="link" >more lists</span></div>
-            </div>
-        <?php
+        return [
+            "name" => "Prayer Calendar",
+            "short_name" => "PrayerCalendar",
+            "start_url" => trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'],
+            "scope" => trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'],
+            "display" => 'standalone',
+            "background_color" => "#fdfdfd",
+            "theme_color" => "#db4938",
+            "orientation" => "portrait-primary",
+            "icons" => [
+                [
+                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-70x70.png",
+                    "type" => "image/png",
+                    "sizes" => "128x128"
+                ],
+                [
+                    "src"=> get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-144x144.png",
+                    "type"=> "image/png",
+                    "sizes"=> "144x144"
+                ],
+                [
+                    "src"=> get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-150x150.png",
+                  "type"=> "image/png",
+                    "sizes"=> "270x270"
+                ],
+                [
+                    "src"=> get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-310x310.png",
+                    "type"=> "image/png",
+                    "sizes"=> "558x558"
+                ]
+            ]
+        ];
     }
 
     /**
@@ -764,7 +590,7 @@ class DT_Prayer_Calendar_Magic_Link
 
     public function get_filter_counts() {
         global $wpdb;
-        $current_user = get_current_user_id();
+        $current_user = get_current_user_id(); // @todo can't use this in magic because of non-logged in
 
         $results = $wpdb->get_results( $wpdb->prepare( "
             SELECT p.post_type, pum.meta_value, count(pum.id) as count

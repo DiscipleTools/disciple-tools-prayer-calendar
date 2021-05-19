@@ -1,0 +1,63 @@
+<div id="custom-style"></div>
+<div id="spinner-background" class="loading-spinner"></div>
+
+<!-- title -->
+<div class="title-bar">
+    <div class="title-bar-left">
+        <button class="menu-icon" type="button" data-open="offCanvasLeft"></button>
+    </div>
+    <div class="center"><span class="title-bar-title"><a href="" id="title_link">Prayer Calendar</a></span></div>
+    <div class="title-bar-right">
+        <button class="menu-icon" type="button" data-open="offCanvasRight"></button>
+    </div>
+</div>
+
+<!-- off canvas menus -->
+<div class="off-canvas-wrapper">
+    <!-- Left Canvas -->
+    <div class="off-canvas position-left" id="offCanvasLeft" data-off-canvas data-transition="push">
+        <button class="close-button" aria-label="Close alert" type="button" data-close>
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <div class="grid-x grid-padding-x">
+            <div class="cell center" style="padding-top: 1em;"><h2>Filters</h2></div>
+            <div class="cell"><hr></div>
+            <div class="cell">
+                <h2>Ordered Lists</h2>
+                <ul>
+                    <li class="basic_lists" data-type="today">Today's List</li>
+                    <li class="basic_lists" data-type="oldest">Oldest</li>
+                    <li class="basic_lists" data-type="newest">Newest</li>
+                    <li class="basic_lists" data-type="least">Least Prayed For</li>
+                    <li class="basic_lists" data-type="most">Most Prayed For</li>
+                </ul>
+            </div>
+            <div class="cell"><hr></div>
+            <div class="cell">
+                <h2>Categories</h2>
+                <div id="category-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Canvas -->
+    <div class="off-canvas position-right" id="offCanvasRight" data-off-canvas data-transition="push">
+        <button class="close-button" aria-label="Close alert" type="button" data-close>
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <div class="grid-x grid-padding-x">
+            <div class="cell center" style="padding-top: 1em;"><h2>Instructions</h2></div>
+            <div class="cell"><hr></div>
+            <div class="cell">
+                <a href="">Go to full system</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- body-->
+<div id="wrapper">
+    <div class="grid-x" id="content"></div>
+    <span class="loading-spinner active" style="margin: 1em;"></span><!-- javascript container -->
+    <div class="center"><span onclick="jQuery('#offCanvasLeft').foundation('open');" class="link" >more lists</span></div>
+</div>
