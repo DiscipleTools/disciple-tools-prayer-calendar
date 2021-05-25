@@ -328,7 +328,7 @@ class DT_Prayer_Calendar_Magic_Link
     }
 
     public function body(){
-        include('prayer-calendar-daily.html');
+        include( 'prayer-calendar-daily.html' );
     }
 
     public function manifest_json() {
@@ -348,19 +348,19 @@ class DT_Prayer_Calendar_Magic_Link
                     "sizes" => "128x128"
                 ],
                 [
-                    "src"=> get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-144x144.png",
-                    "type"=> "image/png",
-                    "sizes"=> "144x144"
+                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-144x144.png",
+                    "type" => "image/png",
+                    "sizes" => "144x144"
                 ],
                 [
-                    "src"=> get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-150x150.png",
-                  "type"=> "image/png",
-                    "sizes"=> "270x270"
+                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-150x150.png",
+                  "type" => "image/png",
+                    "sizes" => "270x270"
                 ],
                 [
-                    "src"=> get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-310x310.png",
-                    "type"=> "image/png",
-                    "sizes"=> "558x558"
+                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-310x310.png",
+                    "type" => "image/png",
+                    "sizes" => "558x558"
                 ]
             ]
         ];
@@ -440,9 +440,9 @@ class DT_Prayer_Calendar_Magic_Link
             WHERE pum.user_id = %d
               AND pum.meta_key = %s
               AND pum.meta_value != 'none'
-        ", $parts['post_id'], $parts['post_id'],$parts['post_id'], $this->key ), ARRAY_A );
+        ", $parts['post_id'], $parts['post_id'], $parts['post_id'], $this->key ), ARRAY_A );
 
-        foreach( $results as $item ) {
+        foreach ( $results as $item ) {
 
             $item['last_report'] = (int) $item['last_report'];
             $item['id'] = (int) $item['id'];
@@ -451,7 +451,7 @@ class DT_Prayer_Calendar_Magic_Link
 
             $data['list'][$item['post_id']] = $item;
 
-            if ( ! isset($item['post_type'] ) ) {
+            if ( ! isset( $item['post_type'] ) ) {
                 $data['totals'][$item['post_type']] = 0;
             }
             $data['totals'][$item['post_type']]++;

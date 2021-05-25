@@ -1,8 +1,12 @@
 [![Build Status](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-calendar.svg?branch=master)](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-calendar)
 
-# Disciple Tools - Prayer Calendar
 
-This project is not released.
+****
+UNDER DEVELOPMENT. NOT RELEASED
+****
+
+
+# Disciple Tools - Prayer Calendar
 
 ## Purpose
 
