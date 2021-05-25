@@ -439,6 +439,7 @@ class DT_Prayer_Calendar_Magic_Link
             JOIN $wpdb->posts p ON p.ID=pum.post_id
             WHERE pum.user_id = %d
               AND pum.meta_key = %s
+              AND pum.meta_value != 'none'
         ", $parts['post_id'], $parts['post_id'],$parts['post_id'], $this->key ), ARRAY_A );
 
         foreach( $results as $item ) {
