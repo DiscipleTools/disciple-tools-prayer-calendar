@@ -37,8 +37,6 @@ window.load_app = () => {
   spinner.addClass('active')
 
   window.load_list( window.prepare_list( 'today' ) )
-  // window.load_list( window.prepare_list( 'weekly' ) )
-  // window.load_list( window.prepare_list( 'monthly' ) )
 
   // load menu filter
   let menu = {}
@@ -47,7 +45,7 @@ window.load_app = () => {
   spinner.removeClass('active')
 }
 
-window.prepare_list = ( type, sort = ['name'] ) => {
+window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
   let data = window.current_list
   let list = {
     label: type.replace('_', ' '),
@@ -55,26 +53,79 @@ window.prepare_list = ( type, sort = ['name'] ) => {
     list: []
   }
 
-  switch (type ) {
-    case 'oldest':
-      sort = ['name']
-      break
-    case 'today':
-      jQuery.each(data.list, function(i,v){
-        // @todo check for timestamp not recorded today
-        if ( v.post_type === type ) {
 
+  jQuery.each(data.list, function(i,v){
+    v.meta = ''
+  })
+
+  switch (type ) {
+    case 'today_desc':
+    case 'today':
+      var d = new Date();
+      d.setHours(0,0,0,0);
+      let midnight = d.getTime() / 1000
+      jQuery.each(data.list, function(i,v){
+        if ( v.last_report < midnight ) {
+          list.count++
+          list.list.push(v)
         }
+      })
+
+      list.list = _.sortBy(list.list, sort )
+      if ( 'today_desc' === type ){
+        list.list = _.reverse( list.list )
+      }
+      break
+    case 'oldest':
+    case 'newest':
+      let fd = new Date(0); // The 0 there is the key, which sets the date to the epoch
+
+      jQuery.each(data.list, function(i,v){
         list.count++
+        if ( 0 ===  v.last_report ) {
+          v.meta = 'never'
+        } else {
+          v.meta = moment.unix(v.last_report).format('MMMM Do')
+        }
         list.list.push(v)
       })
+      sort = ['last_report']
+      list.list = _.sortBy(list.list, sort )
+      if ( 'newest' === type ){
+        list.list = _.reverse( list.list )
+      }
       break
+    case 'most_prayed':
+    case 'least_prayed':
+      jQuery.each(data.list, function(i,v){
+        list.count++
+        v.meta = v.times_prayed
+        list.list.push(v)
+      })
+      sort = ['times_prayed']
+      list.list = _.sortBy(list.list, sort )
+      if ( 'most_prayed' === type ){
+        list.list = _.reverse( list.list )
+      }
+      break;
     case 'weekly':
     case 'monthly':
       jQuery.each(data.list, function(i,v){
         list.count++
         list.list.push(v)
       })
+      break;
+    case 'name':
+    case 'name_desc':
+      jQuery.each(data.list, function(i,v){
+        list.count++
+        list.list.push(v)
+      })
+
+      list.list = _.sortBy(list.list, sort )
+      if ( 'name_desc' === type ){
+        list.list = _.reverse( list.list )
+      }
       break;
     default:
       jQuery.each(data.list, function(i,v){
@@ -83,9 +134,10 @@ window.prepare_list = ( type, sort = ['name'] ) => {
           list.list.push(v)
         }
       })
+      list.list = _.sortBy(list.list, sort )
       break
   }
-  list.list = _.sortBy(list.list, ['name'] )
+
   return list
 }
 
@@ -108,7 +160,7 @@ window.load_list = ( data ) => {
 
     content.append(`<div class="cell prayer-list-wrapper">
                         <div class="draggable ui-widget-content prayer-list" data-value="${vv.post_id}" id="item-${vv.post_id}">
-                            <i class="${icon}"></i> <span class="item-name">${vv.name}</span>
+                            <i class="${icon}"></i> <span class="item-name">${vv.name}</span> <span class="item-meta">${vv.meta}</span>
                         </div>
                      </div>
       `)
@@ -131,13 +183,25 @@ window.load_list = ( data ) => {
 window.load_menu = () => {
   let data = window.current_list
   let category_list = jQuery('#category-list')
-
   jQuery.each(data.totals, function(i,v){
     category_list.append(`<li class="list-item" data-type="${i}">${i} (${v})</li>`)
   })
 
+  let ordered = jQuery('#ordered-list')
+  let ordered_list = { name: "Name", name_desc: "Name (Z-A)", most_prayed: "Most Prayed", least_prayed: "Least Prayed", oldest: "Oldest", newest: "Newest"}
+  jQuery.each(ordered_list, function(i,v){
+    ordered.append(`<li class="list-item" data-type="${i}">${v}</li>`)
+  })
+
+  let today = jQuery('#today-list')
+  let today_list = { today: "Today", today_desc: "Today (Z-A)"}
+  jQuery.each(today_list, function(i,v){
+    today.append(`<li class="list-item" data-type="${i}">${v}</li>`)
+  })
+
+  // jQuery('#today-list').html(`<li class="list-item" data-type="today">Today</li>`)
+
   jQuery('.list-item').on('click', function(e){
-    console.log('test')
     let content = jQuery('#content')
     content.empty()
     let spinner = jQuery('.loading-spinner')

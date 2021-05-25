@@ -151,6 +151,7 @@ class DT_Prayer_Calendar_Magic_Link
         $url = dt_get_url_path();
         if ( strpos( $url, $this->root . '/' . $this->type ) !== false ) {
             wp_enqueue_script( 'lodash' );
+            wp_enqueue_script( 'moment' );
             wp_enqueue_script( 'jquery-ui' );
             wp_enqueue_script( 'jquery-touch-punch' );
 
@@ -162,6 +163,10 @@ class DT_Prayer_Calendar_Magic_Link
                 'jquery',
                 'jquery-touch-punch'
             ], filemtime( plugin_dir_path( __FILE__ ) .'jquery.p2r.min.js' ), true );
+//            wp_enqueue_script( 'service-worker', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'service-worker.js', [
+//                'jquery',
+//                'jquery-touch-punch'
+//            ], filemtime( plugin_dir_path( __FILE__ ) .'service-worker.js' ), true );
         }
     }
     public function _header(){
@@ -184,16 +189,14 @@ class DT_Prayer_Calendar_Magic_Link
             'jquery',
             'jquery-ui',
             'lodash',
+            'moment',
             'site-js',
             'shared-functions',
             'mapbox-gl',
             'mapbox-cookie',
             'mapbox-search-widget',
             'google-search-widget',
-//            'jquery-cookie',
-//            'serviceWorker',
-//            'moment',
-//            'datepicker',
+            'serviceWorker',
             'jquery-touch-punch',
             'prayer_calendar_app_daily',
             'p2r'
@@ -217,7 +220,6 @@ class DT_Prayer_Calendar_Magic_Link
             'jquery-ui-site-css',
             'site-css',
             'mapbox-gl-css',
-//            'datepicker-css',
         ];
 
         global $wp_styles;
@@ -274,7 +276,9 @@ class DT_Prayer_Calendar_Magic_Link
 
             #spinner-background {
                 position:absolute;
-                left: 49%;
+                right:5px;
+                top:0;
+                z-index:100;
                 margin: 5px auto;
             }
             .link {
@@ -282,8 +286,12 @@ class DT_Prayer_Calendar_Magic_Link
                 color: #3f729b;
             }
             .list-item {
+                text-transform: capitalize;
                 cursor: pointer;
                 color: #3f729b;
+            }
+            .item-meta {
+                float:right;
             }
         </style>
         <?php
@@ -308,7 +316,7 @@ class DT_Prayer_Calendar_Magic_Link
             //if ("serviceWorker" in navigator) {
             //    window.addEventListener("load", function() {
             //        navigator.serviceWorker
-            //            .register("<?php //echo trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.js' ?>//")
+            //            .register("<?php //echo trailingslashit( plugin_dir_url( __FILE__ ) ) . 'service-worker.js' ?>//")
             //            .then(res => console.log("service worker registered"))
             //            .catch(err => console.log("service worker not registered", err))
             //    })
@@ -324,7 +332,6 @@ class DT_Prayer_Calendar_Magic_Link
     }
 
     public function manifest_json() {
-
         return [
             "name" => "Prayer Calendar",
             "short_name" => "PrayerCalendar",
@@ -416,26 +423,30 @@ class DT_Prayer_Calendar_Magic_Link
                    p.post_title as name,
                    p.post_type,
                    pum.id,
-                   pum.user_id,
                    pum.meta_value as type,
                    (
                     SELECT r.timestamp
                     FROM $wpdb->dt_reports r
-                    WHERE r.parent_id = 2 AND r.post_id = p.ID
-                    ORDER BY timestamp LIMIT 1
-                    ) as last_report
+                    WHERE r.parent_id = %d AND r.post_id = p.ID
+                    ORDER BY timestamp DESC LIMIT 1
+                    ) as last_report,
+                   (SELECT count(id)
+                       FROM $wpdb->dt_reports rr
+                       WHERE rr.parent_id = %d AND rr.post_id = p.ID
+                       GROUP BY rr.post_id
+                   ) as times_prayed
             FROM $wpdb->dt_post_user_meta pum
             JOIN $wpdb->posts p ON p.ID=pum.post_id
-            WHERE pum.user_id = %s
+            WHERE pum.user_id = %d
               AND pum.meta_key = %s
-        ", $parts['post_id'], $this->key ), ARRAY_A );
+        ", $parts['post_id'], $parts['post_id'],$parts['post_id'], $this->key ), ARRAY_A );
 
         foreach( $results as $item ) {
 
             $item['last_report'] = (int) $item['last_report'];
             $item['id'] = (int) $item['id'];
             $item['post_id'] = (int) $item['post_id'];
-            $item['user_id'] = (int) $item['user_id'];
+            $item['times_prayed'] = (int) $item['times_prayed'];
 
             $data['list'][$item['post_id']] = $item;
 

@@ -8,7 +8,7 @@
     </div>
     <div class="center"><span class="title-bar-title"><a href="" id="title_link">Prayer Calendar</a></span></div>
     <div class="title-bar-right">
-        <button class="menu-icon" type="button" data-open="offCanvasRight"></button>
+<!--        <button class="menu-icon" type="button" data-open="offCanvasRight"></button>-->
     </div>
 </div>
 
@@ -23,18 +23,15 @@
             <div class="cell center" style="padding-top: 1em;"><h2>Filters</h2></div>
             <div class="cell"><hr></div>
             <div class="cell">
-                <h2>Ordered Lists</h2>
-                <ul>
-                    <li class="list-item" data-type="today">Today</li>
-                    <li class="list-item" data-type="oldest">Oldest</li>
-                    <li class="list-item" data-type="newest">Newest</li>
-                    <li class="list-item" data-type="least">Least Prayed For</li>
-                    <li class="list-item" data-type="most">Most Prayed For</li>
-                </ul>
+                <ul id="today-list"></ul>
+            </div>
+            <div class="cell">
+                <h3>Ordered Lists</h3>
+                <ul id="ordered-list"></ul>
             </div>
             <div class="cell"><hr></div>
             <div class="cell">
-                <h2>Categories</h2>
+                <h3>Categories</h3>
                 <ul id="category-list"></ul>
             </div>
         </div>
@@ -57,7 +54,5 @@
 
 <!-- body-->
 <div id="wrapper">
-    <div class="grid-x" id="content"></div>
-    <span class="loading-spinner active" style="margin: 1em;"></span><!-- javascript container -->
-    <div class="center"><span onclick="jQuery('#offCanvasLeft').foundation('open');" class="link" >more lists</span></div>
+    <div class="grid-x" id="content"><div class="cell center" style="padding:1em;"><span class="loading-spinner active"></span></div></div>
 </div>
