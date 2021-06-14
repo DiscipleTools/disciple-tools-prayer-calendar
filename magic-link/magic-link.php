@@ -159,6 +159,7 @@ class DT_Prayer_Calendar_Magic_Link
                 'jquery',
                 'jquery-touch-punch'
             ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.js' ), true );
+
             wp_enqueue_script( 'p2r', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'jquery.p2r.min.js', [
                 'jquery',
                 'jquery-touch-punch'
