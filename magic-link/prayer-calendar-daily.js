@@ -167,14 +167,18 @@ window.load_list = ( data ) => {
   })
 
   let prayer_list = jQuery('.prayer-list')
-  prayer_list.draggable({
-    axis: "x",
-    revert: true,
-    stop: function(e) {
-      let v = jQuery(this).data('value')
-      window.log_prayer_action(v)
-      jQuery('#item-'+v).addClass('checked-off')
-    }
+  // prayer_list.draggable({
+  //   axis: "x",
+  //   revert: true,
+  //   stop: function(e) {
+  //     let v = jQuery(this).data('value')
+  //     window.log_prayer_action(v)
+  //     jQuery('#item-'+v).addClass('checked-off')
+  //   }
+  // })
+  prayer_list.click(function(e){
+    window.log_prayer_action(e.target.dataset.value)
+    jQuery('#item-'+e.target.dataset.value).addClass('checked-off')
   })
 
   spinner.removeClass('active')
