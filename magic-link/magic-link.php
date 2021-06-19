@@ -159,11 +159,12 @@ class DT_Prayer_Calendar_Magic_Link
                 'jquery',
                 'jquery-touch-punch'
             ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.js' ), true );
+            wp_enqueue_style( $this->key, trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.css', ['site-css'], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.css' ));
 
-            wp_enqueue_script( 'p2r', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'jquery.p2r.min.js', [
-                'jquery',
-                'jquery-touch-punch'
-            ], filemtime( plugin_dir_path( __FILE__ ) .'jquery.p2r.min.js' ), true );
+//            wp_enqueue_script( 'p2r', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'jquery.p2r.min.js', [
+//                'jquery',
+//                'jquery-touch-punch'
+//            ], filemtime( plugin_dir_path( __FILE__ ) .'jquery.p2r.min.js' ), true );
 //            wp_enqueue_script( 'service-worker', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'service-worker.js', [
 //                'jquery',
 //                'jquery-touch-punch'
@@ -199,7 +200,7 @@ class DT_Prayer_Calendar_Magic_Link
             'google-search-widget',
             'serviceWorker',
             'jquery-touch-punch',
-            'prayer_calendar_app_daily',
+            $this->key,
             'p2r'
         ];
 
@@ -221,7 +222,9 @@ class DT_Prayer_Calendar_Magic_Link
             'jquery-ui-site-css',
             'site-css',
             'mapbox-gl-css',
+            $this->key,
         ];
+
 
         global $wp_styles;
         if ( isset( $wp_styles ) ) {
@@ -240,59 +243,6 @@ class DT_Prayer_Calendar_Magic_Link
         <style>
             body {
                 background-color: white;
-            }
-            #wrapper {
-                max-width: 800px;
-                margin: 0 auto;
-            }
-            #content {
-                overflow-x: hidden;
-            }
-            .prayer-list-wrapper {
-                background-color: #8BC34A;
-            }
-            .prayer-list {
-                padding: 1.5em .5em;
-                border:1px solid lightgrey;
-                background-color: white;
-                font-size: 1.3em;
-                font-weight: bolder;
-            }
-            .checked-off {
-                margin-left: 40px;
-            }
-            #title_link {
-                color: white;
-            }
-            .item-name {
-                padding-left:1em;
-            }
-            .basic_lists {
-                cursor: pointer;
-                color: #3f729b;
-            }
-            #offCanvasLeft ul {
-                list-style-type: none;
-            }
-
-            #spinner-background {
-                position:absolute;
-                right:5px;
-                top:0;
-                z-index:100;
-                margin: 5px auto;
-            }
-            .link {
-                cursor: pointer;
-                color: #3f729b;
-            }
-            .list-item {
-                text-transform: capitalize;
-                cursor: pointer;
-                color: #3f729b;
-            }
-            .item-meta {
-                float:right;
             }
         </style>
         <?php

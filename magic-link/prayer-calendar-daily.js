@@ -167,18 +167,28 @@ window.load_list = ( data ) => {
   })
 
   let prayer_list = jQuery('.prayer-list')
-  // prayer_list.draggable({
-  //   axis: "x",
-  //   revert: true,
-  //   stop: function(e) {
-  //     let v = jQuery(this).data('value')
-  //     window.log_prayer_action(v)
-  //     jQuery('#item-'+v).addClass('checked-off')
-  //   }
-  // })
   prayer_list.click(function(e){
+    // console.log(e.target.dataset.value)
+    let selected = jQuery('#item-'+e.target.dataset.value)
+    let recorded = jQuery('.recorded')
+
+    if ( selected.hasClass('recorded') ) {
+      recorded.hide("fade")
+      return
+    }
+
+    recorded.hide("fade")
+    selected.addClass('checked-off')
+
     window.log_prayer_action(e.target.dataset.value)
-    jQuery('#item-'+e.target.dataset.value).addClass('checked-off')
+      .done(function(data){
+        if ( selected.hasClass('recorded') ) {
+          selected.hide("fade")
+        }
+        else {
+          selected.addClass('recorded')
+        }
+      })
   })
 
   spinner.removeClass('active')
@@ -220,7 +230,7 @@ window.load_menu = () => {
 
 window.log_prayer_action = ( post_id ) => {
   // note parts.post_id is the user_id, not the post_id
-  jQuery.ajax({
+  return jQuery.ajax({
     type: "POST",
     data: JSON.stringify({ action: 'log', parts: jsObject.parts, post_id: post_id }),
     contentType: "application/json; charset=utf-8",
@@ -230,9 +240,6 @@ window.log_prayer_action = ( post_id ) => {
       xhr.setRequestHeader('X-WP-Nonce', jsObject.nonce )
     }
   })
-    .done(function(data){
-      console.log(data)
-    })
     .fail(function(e) {
       console.log(e)
     })
