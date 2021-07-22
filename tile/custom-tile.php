@@ -25,69 +25,15 @@ class DT_Prayer_Calendar_Tile
      */
     public function dt_custom_fields( array $fields, string $post_type = "" ) {
 
-        if ( in_array( $post_type, [ 'contacts','groups','trainings' ] ) ){
+        if ( in_array( $post_type, [ 'contacts','groups','trainings','streams' ] ) ){
             $fields[$this->token] = [
-                'name' => __( 'Prayer Calendar', 'disciple_tools' ),
-                'type' => 'key_select',
+                'name' => __( 'Prayer List Tags', 'disciple_tools' ),
+                'description' => _x( 'Add tags to organize your prayer lists', 'Optional Documentation', 'disciple_tools' ),
+                'type'        => 'tags',
                 'private' => true,
-                "tile" => "status",
-                'default' => [
-                    'none'   => [
-                        "label" => _x( 'Not on Calendar', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Not on prayer calendar", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#ff9800"
-                    ],
-                    'every_month' => [
-                        "label" => _x( 'Every Month', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray for this contact every month. Automatically, ordered.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_week' => [
-                        "label" => _x( 'Every Week', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray for this contact every month. Automatically, ordered.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_day' => [
-                        "label" => _x( 'Every Day', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray for this contact every month. Automatically, ordered.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_1' => [
-                        "label" => _x( 'Every Monday', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray every Monday.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_2' => [
-                        "label" => _x( 'Every Tuesday', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray every Tuesday.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_3' => [
-                        "label" => _x( 'Every Wednesday', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray every Wednesday.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_4' => [
-                        "label" => _x( 'Every Thursday', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray every Thursday.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_5' => [
-                        "label" => _x( 'Every Friday', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray every Friday.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_6' => [
-                        "label" => _x( 'Every Saturday', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray every Saturday.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                    'every_7' => [
-                        "label" => _x( 'Every Sunday', 'Prayer Calendar label', 'disciple_tools' ),
-                        "description" => _x( "Pray every Sunday.", "Prayer Calendar field description", 'disciple_tools' ),
-                        'color' => "#4CAF50"
-                    ],
-                ],
+                'default'     => [],
+                'tile'        => 'status',
+                'icon' => get_template_directory_uri() . "/dt-assets/images/tag.svg",
             ];
         }
 
@@ -97,7 +43,7 @@ class DT_Prayer_Calendar_Tile
 
     public function dt_user_list_filters( $filters, $post_type ){
 
-        if ( in_array( $post_type, [ 'contacts','groups','trainings' ] ) ) {
+        if ( in_array( $post_type, [ 'contacts','groups','trainings', 'streams' ] ) ) {
             $key = get_user_option( $this->token );
             if ( ! empty( $key ) ) {
                 $counts = $this->get_my_prayer_counts( $post_type );
@@ -115,21 +61,16 @@ class DT_Prayer_Calendar_Tile
                     "order" => 20
                 ];
 
-                $post_type_fields = DT_Posts::get_post_field_settings( $post_type );
-                foreach ( $post_type_fields[$this->token]['default'] as $key => $item ){
-                    if ( 'none' === $key ){
-                        continue;
-                    }
-
+                foreach ($counts as $count) {
                     $filters["filters"][] = [
                         'ID' => $key,
                         'tab' => $this->token,
-                        'name' => $item['label'],
+                        'name' => $count['meta_value'],
                         'query' => [
                             $this->token => [ $key ],
                             'sort' => 'name'
                         ],
-                        "count" => $meta_value_counts[$key] ?? 0,
+                        "count" => $meta_value_counts[$count["meta_value"]] ?? 0,
                     ];
                 }
             }

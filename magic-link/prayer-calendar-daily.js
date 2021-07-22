@@ -53,7 +53,6 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
     list: []
   }
 
-
   jQuery.each(data.list, function(i,v){
     v.meta = ''
   })
@@ -127,6 +126,18 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
         list.list = _.reverse( list.list )
       }
       break;
+    case 'tags':
+
+      jQuery.each(data.list, function(i,v){
+        list.count++
+        list.list.push(v)
+      })
+
+      list.list = _.sortBy(list.list, sort )
+      if ( 'name_desc' === type ){
+        list.list = _.reverse( list.list )
+      }
+      break;
     default:
       jQuery.each(data.list, function(i,v){
         if ( v.post_type === type ) {
@@ -137,6 +148,26 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
       list.list = _.sortBy(list.list, sort )
       break
   }
+
+  return list
+}
+
+window.prepare_tags_list = ( field ) => {
+  let data = window.current_list
+  let list = {
+    label: 'Tag: ' + field,
+    count: 0,
+    list: []
+  }
+
+  jQuery.each(data.list, function(i,v){
+    jQuery.each(v.tags, function(ii,vv) {
+      if ( vv === field ) {
+        list.count++
+        list.list.push(v)
+      }
+    })
+  })
 
   return list
 }
@@ -170,24 +201,14 @@ window.load_list = ( data ) => {
   prayer_list.click(function(e){
     // console.log(e.target.dataset.value)
     let selected = jQuery('#item-'+e.target.dataset.value)
-    let recorded = jQuery('.recorded')
-
     if ( selected.hasClass('recorded') ) {
-      recorded.hide("fade")
       return
     }
-
-    recorded.hide("fade")
     selected.addClass('checked-off')
 
     window.log_prayer_action(e.target.dataset.value)
       .done(function(data){
-        if ( selected.hasClass('recorded') ) {
-          selected.hide("fade")
-        }
-        else {
-          selected.addClass('recorded')
-        }
+        selected.addClass('recorded')
       })
   })
 
@@ -213,6 +234,11 @@ window.load_menu = () => {
     today.append(`<li class="list-item" data-type="${i}">${v}</li>`)
   })
 
+  let tags_list = jQuery('#tags-list')
+  jQuery.each(data.tags, function(i,v){
+    tags_list.append(`<li class="tags-item" data-type="tags" data-field="${v.label}">${v.label} (${v.count})</li>`)
+  })
+
   // jQuery('#today-list').html(`<li class="list-item" data-type="today">Today</li>`)
 
   jQuery('.list-item').on('click', function(e){
@@ -222,6 +248,17 @@ window.load_menu = () => {
     spinner.addClass('active')
     let type = jQuery(this).data('type')
     window.load_list( window.prepare_list( type) )
+    jQuery('#offCanvasLeft').foundation('close')
+    spinner.removeClass('active')
+  })
+
+  jQuery('.tags-item').on('click', function(e){
+    let content = jQuery('#content')
+    content.empty()
+    let spinner = jQuery('.loading-spinner')
+    spinner.addClass('active')
+    let field = jQuery(this).data('field')
+    window.load_list( window.prepare_tags_list( field) )
     jQuery('#offCanvasLeft').foundation('close')
     spinner.removeClass('active')
   })

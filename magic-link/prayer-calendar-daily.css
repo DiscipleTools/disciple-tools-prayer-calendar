@@ -48,6 +48,11 @@
     cursor: pointer;
     color: #3f729b;
 }
+.tags-item {
+    text-transform: capitalize;
+    cursor: pointer;
+    color: #3f729b;
+}
 .item-meta {
     float:right;
 }

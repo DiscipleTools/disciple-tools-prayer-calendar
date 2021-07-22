@@ -367,8 +367,10 @@ class DT_Prayer_Calendar_Magic_Link
         $data = [
             'list' => [],
             'totals' => [],
+            'tags' => [],
         ];
 
+        // get posts
         $results = $wpdb->get_results( $wpdb->prepare( "
             SELECT p.ID as post_id,
                    p.post_title as name,
@@ -393,6 +395,14 @@ class DT_Prayer_Calendar_Magic_Link
               AND pum.meta_value != 'none'
         ", $parts['post_id'], $parts['post_id'], $parts['post_id'], $this->key ), ARRAY_A );
 
+        // get tags
+        $tags = $wpdb->get_results( $wpdb->prepare( "
+            SELECT pum.post_id, pum.meta_value as tag
+            FROM $wpdb->dt_post_user_meta pum
+            WHERE pum.user_id = %d
+              AND pum.meta_key = %s
+        ", $parts['post_id'], $this->key ), ARRAY_A );
+
         foreach ( $results as $item ) {
 
             $item['last_report'] = (int) $item['last_report'];
@@ -408,7 +418,37 @@ class DT_Prayer_Calendar_Magic_Link
             $data['totals'][$item['post_type']]++;
         }
 
+        foreach( $tags as $tag ){
+            if ( isset( $data['list'][$tag['post_id']] ) ) {
+                if ( ! isset( $data['list'][$tag['post_id']]['tags'] ) ) {
+                    $data['list'][$tag['post_id']]['tags'] = [];
+                }
+                $data['list'][$tag['post_id']]['tags'][] = $tag['tag'];
+
+                $tag_key = $this->underscore( $tag['tag'] );
+                if ( ! isset( $data['tags'][$tag_key] ) ) {
+                    $data['tags'][$tag_key] = [
+                        'label' => '',
+                        'count' => 0,
+                    ];
+                }
+                $data['tags'][$tag_key]['label'] = $tag['tag'];
+                $data['tags'][$tag_key]['count']++;
+            }
+        }
+
         return $data;
+    }
+
+    public function underscore($str, array $noStrip = [])
+    {
+        // non-alpha and non-numeric characters become spaces
+        $str = preg_replace('/[^a-z0-9' . implode("", $noStrip) . ']+/i', ' ', $str);
+        $str = trim($str);
+        $str = str_replace(" ", "_", $str);
+        $str = strtolower($str);
+
+        return $str;
     }
 
     public function endpoint_get( $parts ) {
