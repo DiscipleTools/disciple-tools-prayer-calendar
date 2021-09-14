@@ -88,7 +88,7 @@ class DT_Prayer_Calendar {
         require_once( 'tile/custom-tile.php' ); // add custom tile
 
         require_once( 'magic-link/magic-link.php' );
-        require_once( 'settings/add-settings-app.php' );
+//        require_once( 'settings/add-settings-app.php' );
 
         $this->i18n();
 

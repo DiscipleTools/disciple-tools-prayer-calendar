@@ -1,20 +1,16 @@
 <?php
 if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
-if ( strpos( dt_get_url_path(), 'prayer_calendar_app' ) !== false ){
-    DT_Prayer_Calendar_Magic_Link::instance();
-}
 
-class DT_Prayer_Calendar_Magic_Link
+class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
 {
 
-    public $magic = false;
-    public $parts = false;
-    public $title = 'Prayer Calendar App';
+    public $page_title = 'Prayer Calendar App';
+    public $page_description = 'A micro user app page that can be added to home screen.';
     public $root = "prayer_calendar_app";
-    public $key = 'prayer_calendar_app_daily';
     public $type = 'daily';
     public $post_type = 'user';
+    private $meta_key = '';
 
     private static $_instance = null;
     public static function instance() {
@@ -25,219 +21,67 @@ class DT_Prayer_Calendar_Magic_Link
     } // End instance()
 
     public function __construct() {
+        $this->meta_key = $this->root . '_' . $this->type . '_magic_key';
+        parent::__construct();
 
-        // register type
-        $this->magic = new DT_Magic_URL( $this->root );
-        add_filter( 'dt_magic_url_register_types', [ $this, '_register_type' ], 10, 1 );
-
-        // register REST and REST access
-        add_filter( 'dt_allow_rest_access', [ $this, '_authorize_url' ], 10, 1 );
+        /**
+         * user_app and module section
+         */
+        add_filter( 'dt_settings_apps_list', [ $this, 'dt_settings_apps_list' ], 10, 1 );
         add_action( 'rest_api_init', [ $this, 'add_endpoints' ] );
-        add_action( 'wp_enqueue_scripts', [ $this, '_wp_enqueue_scripts' ], 100 );
-
-        // fail if not valid url
+        /**
+         * tests if other URL
+         */
         $url = dt_get_url_path();
         if ( strpos( $url, $this->root . '/' . $this->type ) === false ) {
             return;
         }
 
-        // fail to blank if not valid url
-        $this->parts = $this->magic->parse_url_parts();
-        if ( ! $this->parts ){
-            // @note this returns a blank page for bad url, instead of redirecting to login
-            add_filter( 'dt_templates_for_urls', function ( $template_for_url ) {
-                $url = dt_get_url_path();
-                $template_for_url[ $url ] = 'template-blank.php';
-                return $template_for_url;
-            }, 199, 1 );
-            add_filter( 'dt_blank_access', function(){ return true;
-            } );
-            add_filter( 'dt_allow_non_login_access', function(){ return true;
-            }, 100, 1 );
+        /**
+         * tests magic link parts are registered and have valid elements
+         */
+        if ( !$this->check_parts_match( false ) ){
             return;
         }
-
-        // fail if does not match type
-        if ( $this->type !== $this->parts['type'] ){
-            return;
-        }
-
-        if ( $this->magic->is_valid_key_url( $this->type ) && 'manifest' === $this->parts['action'] ) {
-            add_filter( 'dt_json_access', [ $this, '_has_access' ] );
-            add_action( 'dt_json_content', [ $this, 'manifest_json' ] );
-        }
-        else {
-            add_action( 'dt_blank_body', [ $this, 'body' ] );
-        }
-
 
         // load if valid url
-        add_filter( "dt_blank_title", [ $this, "_browser_tab_title" ] );
-        add_action( 'dt_blank_head', [ $this, '_header' ] );
-        add_action( 'dt_blank_footer', [ $this, '_footer' ] );
-
-        // load page elements
-        add_action( 'wp_print_scripts', [ $this, '_print_scripts' ], 1500 );
-        add_action( 'wp_print_styles', [ $this, '_print_styles' ], 1500 );
-
-        // register url and access
-        add_filter( 'dt_templates_for_urls', [ $this, '_register_url' ], 199, 1 );
-        add_filter( 'dt_blank_access', [ $this, '_has_access' ] );
-        add_filter( 'dt_allow_non_login_access', function(){ return true;
-        }, 100, 1 );
-
+        add_action( 'wp_enqueue_scripts', [ $this, '_wp_enqueue_scripts' ], 100 );
+        add_action( 'dt_blank_body', [ $this, 'body' ] );
+        add_filter( 'dt_magic_url_base_allowed_css', [ $this, 'dt_magic_url_base_allowed_css' ], 10, 1 );
+        add_filter( 'dt_magic_url_base_allowed_js', [ $this, 'dt_magic_url_base_allowed_js' ], 10, 1 );
 
     }
 
-    public function _register_type( array $types ) : array {
-        if ( ! isset( $types[$this->root] ) ) {
-            $types[$this->root] = [];
-        }
-        $types[$this->root][$this->type] = [
-            'name' => $this->title,
-            'root' => $this->root,
-            'type' => $this->type,
-            'meta_key' => $this->root . '_' . $this->type,
-            'actions' => [
-                '' => 'Manage',
-                'manifest' => 'Manifest',
-            ],
-            'post_type' => $this->post_type,
+    public function dt_settings_apps_list( $apps_list ) {
+        $apps_list[$this->meta_key] = [
+            'key' => $this->meta_key,
+            'url_base' => $this->root. '/'. $this->type,
+            'label' => $this->page_title,
+            'description' => $this->page_description,
         ];
-        return $types;
+        return $apps_list;
     }
-    public function _register_url( $template_for_url ){
-        $parts = $this->parts;
 
-        // test 1 : correct url root and type
-        if ( ! $parts ){ // parts returns false
-            return $template_for_url;
-        }
-
-        // test 2 : only base url requested
-        if ( empty( $parts['public_key'] ) ){ // no public key present
-            $template_for_url[ $parts['root'] . '/'. $parts['type'] ] = 'template-blank.php';
-            return $template_for_url;
-        }
-
-        // test 3 : no specific action requested
-        if ( empty( $parts['action'] ) ){ // only root public key requested
-            $template_for_url[ $parts['root'] . '/'. $parts['type'] . '/' . $parts['public_key'] ] = 'template-blank.php';
-            return $template_for_url;
-        }
-
-        // test 4 : valid action requested
-        $actions = $this->magic->list_actions( $parts['type'] );
-        if ( isset( $actions[ $parts['action'] ] ) && 'manifest' === $parts['action'] ){
-            $template_for_url[ $parts['root'] . '/'. $parts['type'] . '/' . $parts['public_key'] . '/' . $parts['action'] ] = 'template-blank-json.php';
-        }
-        else if ( isset( $actions[ $parts['action'] ] ) ){
-            $template_for_url[ $parts['root'] . '/'. $parts['type'] . '/' . $parts['public_key'] . '/' . $parts['action'] ] = 'template-blank.php';
-        }
-
-        return $template_for_url;
+    public function dt_magic_url_base_allowed_js( $allowed_js ) {
+        $allowed_js[] = 'jquery-touch-punch';
+        $allowed_js[] = 'prayer-calendar-daily-js';
+        return $allowed_js;
     }
-    public function _has_access() : bool {
-        $parts = $this->parts;
 
-        // test 1 : correct url root and type
-        if ( $parts ){ // parts returns false
-            return true;
-        }
-
-        return false;
+    public function dt_magic_url_base_allowed_css( $allowed_css ) {
+        $allowed_css[] = 'prayer-calendar-daily-css';
+        return $allowed_css;
     }
+
     public function _wp_enqueue_scripts(){
-        $url = dt_get_url_path();
-        if ( strpos( $url, $this->root . '/' . $this->type ) !== false ) {
-            wp_enqueue_script( 'lodash' );
-            wp_enqueue_script( 'moment' );
-            wp_enqueue_script( 'jquery-ui' );
-            wp_enqueue_script( 'jquery-touch-punch' );
-
-            wp_enqueue_script( $this->key, trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.js', [
-                'jquery',
-                'jquery-touch-punch'
-            ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.js' ), true );
-            wp_enqueue_style( $this->key, trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.css', ['site-css'], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.css' ));
-
-//            wp_enqueue_script( 'p2r', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'jquery.p2r.min.js', [
-//                'jquery',
-//                'jquery-touch-punch'
-//            ], filemtime( plugin_dir_path( __FILE__ ) .'jquery.p2r.min.js' ), true );
-//            wp_enqueue_script( 'service-worker', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'service-worker.js', [
-//                'jquery',
-//                'jquery-touch-punch'
-//            ], filemtime( plugin_dir_path( __FILE__ ) .'service-worker.js' ), true );
-        }
-    }
-    public function _header(){
-        wp_head();
-        $this->header_style();
-        $this->header_javascript();
-    }
-    public function _footer(){
-        wp_footer();
-    }
-    public function _authorize_url( $authorized ){
-        if ( isset( $_SERVER['REQUEST_URI'] ) && strpos( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), $this->root . '/v1/'.$this->type ) !== false ) {
-            $authorized = true;
-        }
-        return $authorized;
-    }
-    public function _print_scripts(){
-        // @link /disciple-tools-theme/dt-assets/functions/enqueue-scripts.php
-        $allowed_js = [
+        wp_register_script('jquery-touch-punch', '/wp-includes/js/jquery/jquery.ui.touch-punch.js');
+        wp_enqueue_script('prayer-calendar-daily-js', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.js', [
             'jquery',
-            'jquery-ui',
-            'lodash',
-            'moment',
-            'site-js',
-            'shared-functions',
-            'mapbox-gl',
-            'mapbox-cookie',
-            'mapbox-search-widget',
-            'google-search-widget',
-            'serviceWorker',
-            'jquery-touch-punch',
-            $this->key,
-            'p2r'
-        ];
+        ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.js' ), true );
 
-        global $wp_scripts;
-
-        if ( isset( $wp_scripts ) ){
-            foreach ( $wp_scripts->queue as $key => $item ){
-                if ( ! in_array( $item, $allowed_js ) ){
-                    unset( $wp_scripts->queue[$key] );
-                }
-            }
-        }
-        unset( $wp_scripts->registered['mapbox-search-widget']->extra['group'] );
+        wp_enqueue_style( 'prayer-calendar-daily-css', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.css', ['site-css'], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.css' ));
     }
-    public function _print_styles(){
-        // @link /disciple-tools-theme/dt-assets/functions/enqueue-scripts.php
-        $allowed_css = [
-            'foundation-css',
-            'jquery-ui-site-css',
-            'site-css',
-            'mapbox-gl-css',
-            $this->key,
-        ];
 
-
-        global $wp_styles;
-        if ( isset( $wp_styles ) ) {
-            foreach ($wp_styles->queue as $key => $item) {
-                if ( !in_array( $item, $allowed_css )) {
-                    unset( $wp_styles->queue[$key] );
-                }
-            }
-        }
-    }
-    public function _browser_tab_title( $title ){
-        return __( "Prayer Calendar", 'disciple_tools' );
-    }
     public function header_style(){
         ?>
         <style>
@@ -247,11 +91,15 @@ class DT_Prayer_Calendar_Magic_Link
         </style>
         <?php
     }
-    public function header_javascript(){
 
-        // add manifest for pwa
+    /**
+     * Writes javascript to the footer
+     *
+     * @see DT_Magic_Url_Base()->footer_javascript() for default state
+     * @todo remove if not needed
+     */
+    public function footer_javascript(){
         ?>
-<!--        <link rel="manifest" href="--><?php //echo trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'] . '/manifest' ?><!--">-->
         <script>
             let jsObject = [<?php echo json_encode([
                 'map_key' => DT_Mapbox_API::get_key(),
@@ -259,19 +107,10 @@ class DT_Prayer_Calendar_Magic_Link
                 'nonce' => wp_create_nonce( 'wp_rest' ),
                 'parts' => $this->parts,
                 'translations' => [
-                    'add' => __( 'Add Prayer Calendar', 'disciple_tools' ),
+                    'add' => __( 'Add Magic', 'disciple-tools-plugin-starter-template' ),
                 ],
             ]) ?>][0]
 
-
-            //if ("serviceWorker" in navigator) {
-            //    window.addEventListener("load", function() {
-            //        navigator.serviceWorker
-            //            .register("<?php //echo trailingslashit( plugin_dir_url( __FILE__ ) ) . 'service-worker.js' ?>//")
-            //            .then(res => console.log("service worker registered"))
-            //            .catch(err => console.log("service worker not registered", err))
-            //    })
-            //}
 
         </script>
         <?php
@@ -280,41 +119,6 @@ class DT_Prayer_Calendar_Magic_Link
 
     public function body(){
         include( 'prayer-calendar-daily.html' );
-    }
-
-    public function manifest_json() {
-        return [
-            "name" => "Prayer Calendar",
-            "short_name" => "PrayerCalendar",
-            "start_url" => trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'],
-            "scope" => trailingslashit( site_url() ) . $this->parts['root'] . '/' . $this->parts['type'] . '/' . $this->parts['public_key'],
-            "display" => 'standalone',
-            "background_color" => "#fdfdfd",
-            "theme_color" => "#db4938",
-            "orientation" => "portrait-primary",
-            "icons" => [
-                [
-                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-70x70.png",
-                    "type" => "image/png",
-                    "sizes" => "128x128"
-                ],
-                [
-                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-144x144.png",
-                    "type" => "image/png",
-                    "sizes" => "144x144"
-                ],
-                [
-                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-150x150.png",
-                  "type" => "image/png",
-                    "sizes" => "270x270"
-                ],
-                [
-                    "src" => get_stylesheet_directory_uri() . "/dt-assets/favicons/mstile-310x310.png",
-                    "type" => "image/png",
-                    "sizes" => "558x558"
-                ]
-            ]
-        ];
     }
 
     /**
@@ -393,7 +197,7 @@ class DT_Prayer_Calendar_Magic_Link
             WHERE pum.user_id = %d
               AND pum.meta_key = %s
               AND pum.meta_value != 'none'
-        ", $parts['post_id'], $parts['post_id'], $parts['post_id'], $this->key ), ARRAY_A );
+        ", $parts['post_id'], $parts['post_id'], $parts['post_id'], $this->meta_key ), ARRAY_A );
 
         // get tags
         $tags = $wpdb->get_results( $wpdb->prepare( "
@@ -401,7 +205,7 @@ class DT_Prayer_Calendar_Magic_Link
             FROM $wpdb->dt_post_user_meta pum
             WHERE pum.user_id = %d
               AND pum.meta_key = %s
-        ", $parts['post_id'], $this->key ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key ), ARRAY_A );
 
         foreach ( $results as $item ) {
 
@@ -412,7 +216,7 @@ class DT_Prayer_Calendar_Magic_Link
 
             $data['list'][$item['post_id']] = $item;
 
-            if ( ! isset( $item['post_type'] ) ) {
+            if ( ! isset( $data['totals'][$item['post_type']] ) ) {
                 $data['totals'][$item['post_type']] = 0;
             }
             $data['totals'][$item['post_type']]++;
@@ -487,7 +291,7 @@ class DT_Prayer_Calendar_Magic_Link
                     AND r.type = 'prayer_calendar_app'
                     AND r.subtype = 'daily'
                 )
-        ", $parts['post_id'], $this->key, $day_key, $time_at_start_of_day, $parts['post_id'] ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key, $day_key, $time_at_start_of_day, $parts['post_id'] ), ARRAY_A );
         if ( ! empty( $data['lists']['today'] ) ){
             $data['counts']['today'] = count( $data['lists']['today'] );
         }
@@ -508,7 +312,7 @@ class DT_Prayer_Calendar_Magic_Link
                     AND r.type = 'prayer_calendar_app'
                     AND r.subtype = 'daily'
                 )
-        ", $parts['post_id'], $this->key, $time_a_week_ago, $parts['post_id'] ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key, $time_a_week_ago, $parts['post_id'] ), ARRAY_A );
         if ( ! empty( $data['lists']['weekly'] ) ){
             $data['counts']['weekly'] = count( $data['lists']['weekly'] );
         }
@@ -529,7 +333,7 @@ class DT_Prayer_Calendar_Magic_Link
                     AND r.type = 'prayer_calendar_app'
                     AND r.subtype = 'daily'
                 )
-        ", $parts['post_id'], $this->key, $time_a_month_ago, $parts['post_id'] ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key, $time_a_month_ago, $parts['post_id'] ), ARRAY_A );
         if ( ! empty( $data['lists']['monthly'] ) ){
             $data['counts']['monthly'] = count( $data['lists']['monthly'] );
         }
@@ -560,7 +364,7 @@ class DT_Prayer_Calendar_Magic_Link
               AND pum.meta_key = %s
               AND p.post_type = %s
               AND pum.meta_value = %s
-        ", $parts['post_id'], $this->key, $post_type, $meta_value ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key, $post_type, $meta_value ), ARRAY_A );
         if ( ! empty( $data['lists'][$meta_value] ) ){
             $data['counts'][$meta_value] = count( $data['lists'][$meta_value] );
         }
@@ -583,7 +387,7 @@ class DT_Prayer_Calendar_Magic_Link
             WHERE pum.user_id = %s
               AND pum.meta_key = %s
             GROUP BY p.post_type, pum.meta_value
-        ", $parts['post_id'], $this->key ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key ), ARRAY_A );
 
         foreach ( $results as $result ) {
             if ( ! isset( $data['lists'][$result['post_type']] ) ) {
@@ -647,7 +451,7 @@ class DT_Prayer_Calendar_Magic_Link
                 pum.user_id = %d
                 AND pum.meta_key = %s
                 GROUP BY p.post_type, pum.meta_value
-        ", $current_user, $this->key ), ARRAY_A);
+        ", $current_user, $this->meta_key ), ARRAY_A);
 
         $filters = [];
         if ( ! empty( $results ) ) {
@@ -662,4 +466,4 @@ class DT_Prayer_Calendar_Magic_Link
         return $filters;
     }
 }
-
+DT_Prayer_Calendar_Magic_Link::instance();
