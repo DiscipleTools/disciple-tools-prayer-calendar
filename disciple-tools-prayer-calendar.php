@@ -5,7 +5,7 @@
  * Description: Add a prayer calendar for users that lets you select contacts and groups, and place them on a daily calendar to pray through.
  * Text Domain: disciple-tools-prayer-calendar
  * Domain Path: /languages
- * Version:  0.1
+ * Version:  1.0
  * Author URI: https://github.com/DiscipleTools
  * GitHub Plugin URI: https://github.com/DiscipleTools/disciple-tools-prayer-calendar
  * Requires at least: 4.7.0
@@ -21,8 +21,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly
 }
-
-
 
 /**
  * Gets the instance of the `DT_Prayer_Calendar` class.
