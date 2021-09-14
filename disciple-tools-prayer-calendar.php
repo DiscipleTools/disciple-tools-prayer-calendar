@@ -10,7 +10,7 @@
  * GitHub Plugin URI: https://github.com/DiscipleTools/disciple-tools-prayer-calendar
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
- * Tested up to: 5.6
+ * Tested up to: 5.8
  *
  * @package Disciple_Tools
  * @link    https://github.com/DiscipleTools
@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return object|bool
  */
 function dt_prayer_calendar() {
-    $dt_prayer_calendar_required_dt_theme_version = '1.0';
+    $dt_prayer_calendar_required_dt_theme_version = '1.12.3';
     $wp_theme = wp_get_theme();
     $version = $wp_theme->version;
 
