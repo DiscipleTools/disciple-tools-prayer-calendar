@@ -74,12 +74,12 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
     }
 
     public function _wp_enqueue_scripts(){
-        wp_register_script('jquery-touch-punch', '/wp-includes/js/jquery/jquery.ui.touch-punch.js');
+        wp_register_script( 'jquery-touch-punch', '/wp-includes/js/jquery/jquery.ui.touch-punch.js' ); // @phpcs:ignore
         wp_enqueue_script('prayer-calendar-daily-js', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.js', [
             'jquery',
         ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.js' ), true );
 
-        wp_enqueue_style( 'prayer-calendar-daily-css', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.css', ['site-css'], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.css' ));
+        wp_enqueue_style( 'prayer-calendar-daily-css', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.css', [ 'site-css' ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.css' ) );
     }
 
     public function header_style(){
@@ -169,18 +169,19 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
     public function endpoint_get_all( $parts ) {
         global $wpdb;
         $data = [
+            'tags' => [],
             'list' => [],
             'totals' => [],
-            'tags' => [],
+            'status' => [ 'active' ],
+            'status_list' => [],
+            'status_totals' => []
         ];
 
-        // get posts
+        // TAGS
         $results = $wpdb->get_results( $wpdb->prepare( "
             SELECT p.ID as post_id,
                    p.post_title as name,
                    p.post_type,
-                   pum.id,
-                   pum.meta_value as type,
                    (
                     SELECT r.timestamp
                     FROM $wpdb->dt_reports r
@@ -199,7 +200,6 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
               AND pum.meta_value != 'none'
         ", $parts['post_id'], $parts['post_id'], $parts['post_id'], $this->meta_key ), ARRAY_A );
 
-        // get tags
         $tags = $wpdb->get_results( $wpdb->prepare( "
             SELECT pum.post_id, pum.meta_value as tag
             FROM $wpdb->dt_post_user_meta pum
@@ -207,12 +207,15 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
               AND pum.meta_key = %s
         ", $parts['post_id'], $this->meta_key ), ARRAY_A );
 
+        $today_at_midnight = strtotime( gmdate( "Ymd" ) );
+
         foreach ( $results as $item ) {
 
             $item['last_report'] = (int) $item['last_report'];
             $item['id'] = (int) $item['id'];
             $item['post_id'] = (int) $item['post_id'];
             $item['times_prayed'] = (int) $item['times_prayed'];
+            $item['prayed_today'] = ( $item['last_report'] >= $today_at_midnight );
 
             $data['list'][$item['post_id']] = $item;
 
@@ -221,8 +224,7 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
             }
             $data['totals'][$item['post_type']]++;
         }
-
-        foreach( $tags as $tag ){
+        foreach ( $tags as $tag ){
             if ( isset( $data['list'][$tag['post_id']] ) ) {
                 if ( ! isset( $data['list'][$tag['post_id']]['tags'] ) ) {
                     $data['list'][$tag['post_id']]['tags'] = [];
@@ -240,17 +242,61 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
                 $data['tags'][$tag_key]['count']++;
             }
         }
+        // end tagged posts
+
+        // STATUS
+        $types = [ 'active' ];
+        $keys = [ 'overall_status','group_status', 'status' ];
+        $status_types = dt_array_to_sql( $types );
+        $status_key = dt_array_to_sql( $keys );
+
+        // @phpcs:disable
+        $status = $wpdb->get_results( $wpdb->prepare( "
+            SELECT DISTINCT s.post_id,
+                   p.post_title as name,
+                   p.post_type,
+                   pm.meta_value as status,
+                   ( SELECT r.timestamp
+                     FROM $wpdb->dt_reports r
+                     WHERE r.parent_id = %d AND r.post_id = p.ID
+                     ORDER BY timestamp DESC LIMIT 1) as last_report,
+                   (SELECT count(id)
+                     FROM $wpdb->dt_reports rr
+                     WHERE rr.parent_id = %d AND rr.post_id = p.ID
+                     GROUP BY rr.post_id) as times_prayed
+            FROM $wpdb->dt_share s
+            JOIN $wpdb->postmeta pm ON pm.post_id=s.post_id AND pm.meta_key IN ($status_key) AND pm.meta_value IN ($status_types)
+            LEFT JOIN $wpdb->posts p ON p.ID=s.post_id
+            LEFT JOIN $wpdb->dt_post_user_meta pum ON s.post_id=pum.post_id
+            WHERE s.user_id = %d
+        ", $parts['post_id'], $parts['post_id'], $parts['post_id'] ), ARRAY_A );
+        // @phpcs:enable
+
+        foreach ( $status as $item ) {
+
+            $item['last_report'] = (int) $item['last_report'];
+            $item['post_id'] = (int) $item['post_id'];
+            $item['times_prayed'] = (int) $item['times_prayed'];
+            $item['prayed_today'] = ( $item['last_report'] >= $today_at_midnight );
+
+            $data['status_list'][$item['post_id']] = $item;
+
+            if ( ! isset( $data['status_totals'][$item['post_type']] ) ) {
+                $data['status_totals'][$item['post_type']] = 0;
+            }
+            $data['status_totals'][$item['post_type']]++;
+
+        }
 
         return $data;
     }
 
-    public function underscore($str, array $noStrip = [])
-    {
+    public function underscore( $str, array $no_strip = []) {
         // non-alpha and non-numeric characters become spaces
-        $str = preg_replace('/[^a-z0-9' . implode("", $noStrip) . ']+/i', ' ', $str);
-        $str = trim($str);
-        $str = str_replace(" ", "_", $str);
-        $str = strtolower($str);
+        $str = preg_replace( '/[^a-z0-9' . implode( "", $no_strip ) . ']+/i', ' ', $str );
+        $str = trim( $str );
+        $str = str_replace( " ", "_", $str );
+        $str = strtolower( $str );
 
         return $str;
     }

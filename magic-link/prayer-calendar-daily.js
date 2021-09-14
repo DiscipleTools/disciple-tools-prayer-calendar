@@ -52,6 +52,7 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
     count: 0,
     list: []
   }
+  console.log(type)
 
   jQuery.each(data.list, function(i,v){
     v.meta = ''
@@ -66,8 +67,8 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
       jQuery.each(data.list, function(i,v){
         if ( v.last_report < midnight ) {
           list.count++
-          list.list.push(v)
         }
+        list.list.push(v)
       })
 
       list.list = _.sortBy(list.list, sort )
@@ -127,7 +128,6 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
       }
       break;
     case 'tags':
-
       jQuery.each(data.list, function(i,v){
         list.count++
         list.list.push(v)
@@ -138,6 +138,27 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
         list.list = _.reverse( list.list )
       }
       break;
+    case 'contacts_active':
+    case 'groups_active':
+    case 'trainings_active':
+    case 'streams_active':
+      jQuery.each(data.status_list, function(i,v){
+        if ( v.post_type + '_active' === type ) {
+          list.count++
+          if ( 0 ===  v.last_report || v.prayed_today ) {
+            v.meta = ''
+          } else {
+            v.meta = moment.unix(v.last_report).format('MMMM Do')
+          }
+          list.list.push(v)
+        }
+      })
+      sort = ['last_report']
+      list.list = _.sortBy(list.list, sort )
+      if ( 'newest' === type ){
+        list.list = _.reverse( list.list )
+      }
+      break
     default:
       jQuery.each(data.list, function(i,v){
         if ( v.post_type === type ) {
@@ -178,7 +199,7 @@ window.load_list = ( data ) => {
   let content = jQuery('#content')
   content.append(`<div class="cell center" style="background:whitesmoke;text-transform:capitalize;">${data.label} <span>(${data.count})</span></div>`)
 
-  let icon = ''
+  let icon, checked_off
   jQuery.each(data.list, function(ii,vv){
     icon = ''
     if ( 'contacts' === vv.post_type ) {
@@ -189,15 +210,21 @@ window.load_list = ( data ) => {
       icon = 'fi-results-demographics'
     }
 
+    if ( vv.prayed_today ) {
+      checked_off = 'checked-off'
+    } else {
+      checked_off = ''
+    }
+
     content.append(`<div class="cell prayer-list-wrapper">
-                        <div class="draggable ui-widget-content prayer-list" data-value="${vv.post_id}" id="item-${vv.post_id}">
-                            <i class="${icon}"></i> <span class="item-name">${vv.name}</span> <span class="item-meta">${vv.meta}</span>
+                        <div class="ui-widget-content prayer-list clickable-item ${checked_off}" data-value="${vv.post_id}" id="item-${vv.post_id}">
+                            <i data-value="${vv.post_id}" class="${icon} clickable-item"></i> <span data-value="${vv.post_id}" class="item-name clickable-item">${vv.name}</span> <span data-value="${vv.post_id}" class="item-meta clickable-item">${vv.meta}</span>
                         </div>
                      </div>
       `)
   })
 
-  let prayer_list = jQuery('.prayer-list')
+  let prayer_list = jQuery('.clickable-item')
   prayer_list.click(function(e){
     // console.log(e.target.dataset.value)
     let selected = jQuery('#item-'+e.target.dataset.value)
@@ -205,10 +232,12 @@ window.load_list = ( data ) => {
       return
     }
     selected.addClass('checked-off')
+    jQuery('#item-'+e.target.dataset.value+' span.item-meta').empty()
 
     window.log_prayer_action(e.target.dataset.value)
       .done(function(data){
         selected.addClass('recorded')
+        window.current_list.list[e.target.dataset.value].prayed_today = true
       })
   })
 
@@ -226,6 +255,12 @@ window.load_menu = () => {
   let ordered_list = { name: "Name", name_desc: "Name (Z-A)", most_prayed: "Most Prayed", least_prayed: "Least Prayed", oldest: "Oldest", newest: "Newest"}
   jQuery.each(ordered_list, function(i,v){
     ordered.append(`<li class="list-item" data-type="${i}">${v}</li>`)
+  })
+
+  let status = jQuery('#status-list')
+  let status_list = window.current_list.status_totals
+  jQuery.each(status_list, function(i,v){
+    status.append(`<li class="list-item" data-type="${i}_active" style="text-transform:capitalize;">${i} (${v})</li>`)
   })
 
   let today = jQuery('#today-list')
