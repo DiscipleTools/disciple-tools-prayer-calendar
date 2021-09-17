@@ -207,7 +207,7 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
               AND pum.meta_key = %s
         ", $parts['post_id'], $this->meta_key ), ARRAY_A );
 
-        $today_at_midnight = strtotime( gmdate( "Ymd" ) );
+        $today_at_midnight = strtotime( "today" );
 
         foreach ( $results as $item ) {
 
