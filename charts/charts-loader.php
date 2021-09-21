@@ -1,7 +1,7 @@
 <?php
 if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
-class DT_Prayer_Calendar_Charts
+class DT_Prayer_List_Charts
 {
     private static $_instance = null;
     public static function instance(){
@@ -14,7 +14,7 @@ class DT_Prayer_Calendar_Charts
     public function __construct(){
 
         require_once( 'one-page-chart-template.php' );
-        new DT_Prayer_Calendar_Chart_Template();
+        new DT_Prayer_List_Chart_Template();
 
         /**
          * @todo add other charts like the pattern above here
@@ -22,4 +22,4 @@ class DT_Prayer_Calendar_Charts
 
     } // End __construct
 }
-DT_Prayer_Calendar_Charts::instance();
+DT_Prayer_List_Charts::instance();

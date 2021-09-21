@@ -1,12 +1,6 @@
-[![Build Status](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-calendar.svg?branch=master)](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-calendar)
+[![Build Status](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-list.svg?branch=master)](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-list)
 
-
-****
-UNDER DEVELOPMENT. NOT RELEASED
-****
-
-
-# Disciple Tools - Prayer Calendar
+# Disciple Tools - Prayer List
 
 ## Purpose
 
@@ -37,8 +31,8 @@ from data living in Disciple Tools.
 ## Contribution
 
 Contributions welcome. You can report issues and bugs in the
-[Issues](https://github.com/DiscipleTools/disciple-tools-prayer-calendar/issues) section of the repo. You can present ideas
-in the [Discussions](https://github.com/DiscipleTools/disciple-tools-prayer-calendar/discussions) section of the repo. And
-code contributions are welcome using the [Pull Request](https://github.com/DiscipleTools/disciple-tools-prayer-calendar/pulls)
+[Issues](https://github.com/DiscipleTools/disciple-tools-prayer-list/issues) section of the repo. You can present ideas
+in the [Discussions](https://github.com/DiscipleTools/disciple-tools-prayer-list/discussions) section of the repo. And
+code contributions are welcome using the [Pull Request](https://github.com/DiscipleTools/disciple-tools-prayer-list/pulls)
 system for git. For a more details on contribution see the
-[contribution guidelines](https://github.com/DiscipleTools/disciple-tools-prayer-calendar/blob/master/CONTRIBUTING.md).
+[contribution guidelines](https://github.com/DiscipleTools/disciple-tools-prayer-list/blob/master/CONTRIBUTING.md).

@@ -2,12 +2,12 @@
 if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
 
-class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
+class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
 {
 
-    public $page_title = 'Prayer Calendar App';
+    public $page_title = 'Prayer List App';
     public $page_description = 'A micro user app page that can be added to home screen.';
-    public $root = "prayer_calendar_app";
+    public $root = "prayer_list_app";
     public $type = 'daily';
     public $post_type = 'user';
     private $meta_key = '';
@@ -64,22 +64,22 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
 
     public function dt_magic_url_base_allowed_js( $allowed_js ) {
         $allowed_js[] = 'jquery-touch-punch';
-        $allowed_js[] = 'prayer-calendar-daily-js';
+        $allowed_js[] = 'prayer-list-daily-js';
         return $allowed_js;
     }
 
     public function dt_magic_url_base_allowed_css( $allowed_css ) {
-        $allowed_css[] = 'prayer-calendar-daily-css';
+        $allowed_css[] = 'prayer-list-daily-css';
         return $allowed_css;
     }
 
     public function _wp_enqueue_scripts(){
         wp_register_script( 'jquery-touch-punch', '/wp-includes/js/jquery/jquery.ui.touch-punch.js' ); // @phpcs:ignore
-        wp_enqueue_script('prayer-calendar-daily-js', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.js', [
+        wp_enqueue_script('prayer-list-daily-js', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-list-daily.js', [
             'jquery',
-        ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.js' ), true );
+        ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-list-daily.js' ), true );
 
-        wp_enqueue_style( 'prayer-calendar-daily-css', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-calendar-daily.css', [ 'site-css' ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-calendar-daily.css' ) );
+        wp_enqueue_style( 'prayer-list-daily-css', trailingslashit( plugin_dir_url( __FILE__ ) ) . 'prayer-list-daily.css', [ 'site-css' ], filemtime( plugin_dir_path( __FILE__ ) .'prayer-list-daily.css' ) );
     }
 
     public function header_style(){
@@ -118,7 +118,7 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
     }
 
     public function body(){
-        include( 'prayer-calendar-daily.html' );
+        include( 'prayer-list-daily.html' );
     }
 
     /**
@@ -334,7 +334,7 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
                     FROM $wpdb->dt_reports r
                     WHERE r.timestamp > %d
                       AND r.parent_id = %d
-                    AND r.type = 'prayer_calendar_app'
+                    AND r.type = 'prayer_list_app'
                     AND r.subtype = 'daily'
                 )
         ", $parts['post_id'], $this->meta_key, $day_key, $time_at_start_of_day, $parts['post_id'] ), ARRAY_A );
@@ -355,7 +355,7 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
                     FROM $wpdb->dt_reports r
                     WHERE r.timestamp > %d
                       AND r.parent_id = %d
-                    AND r.type = 'prayer_calendar_app'
+                    AND r.type = 'prayer_list_app'
                     AND r.subtype = 'daily'
                 )
         ", $parts['post_id'], $this->meta_key, $time_a_week_ago, $parts['post_id'] ), ARRAY_A );
@@ -376,7 +376,7 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
                     FROM $wpdb->dt_reports r
                     WHERE r.timestamp > %d
                     AND r.parent_id = %d
-                    AND r.type = 'prayer_calendar_app'
+                    AND r.type = 'prayer_list_app'
                     AND r.subtype = 'daily'
                 )
         ", $parts['post_id'], $this->meta_key, $time_a_month_ago, $parts['post_id'] ), ARRAY_A );
@@ -512,4 +512,4 @@ class DT_Prayer_Calendar_Magic_Link extends DT_Magic_Url_Base
         return $filters;
     }
 }
-DT_Prayer_Calendar_Magic_Link::instance();
+DT_Prayer_List_Magic_Link::instance();

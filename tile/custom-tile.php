@@ -1,7 +1,7 @@
 <?php
 if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
-class DT_Prayer_Calendar_Tile
+class DT_Prayer_List_Tile
 {
     private static $_instance = null;
     public static function instance(){
@@ -10,7 +10,7 @@ class DT_Prayer_Calendar_Tile
         }
         return self::$_instance;
     }
-    public $root = "prayer_calendar_app";
+    public $root = "prayer_list_app";
     public $type = 'daily';
     public $meta_key = '';
 
@@ -56,7 +56,7 @@ class DT_Prayer_Calendar_Tile
 
             $filters["tabs"][] = [
                 "key" => $this->meta_key,
-                "label" => _x( "Prayer Calendar", 'List Filters', 'disciple_tools' ),
+                "label" => _x( "Prayer List", 'List Filters', 'disciple_tools' ),
                 "count" => $total_prayer_items,
                 "order" => 20
             ];
@@ -98,4 +98,4 @@ class DT_Prayer_Calendar_Tile
     }
 
 }
-DT_Prayer_Calendar_Tile::instance();
+DT_Prayer_List_Tile::instance();

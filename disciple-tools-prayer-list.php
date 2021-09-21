@@ -1,13 +1,13 @@
 <?php
 /**
- * Plugin Name: Disciple Tools - Prayer Calendar
- * Plugin URI: https://github.com/DiscipleTools/disciple-tools-prayer-calendar
- * Description: Add a prayer calendar for users that lets you select contacts and groups, and place them on a daily calendar to pray through.
- * Text Domain: disciple-tools-prayer-calendar
+ * Plugin Name: Disciple.Tools - Prayer List
+ * Plugin URI: https://github.com/DiscipleTools/disciple-tools-prayer-list
+ * Description: Add a prayer list for users that lets you select contacts and groups, and place them on a daily list to pray through.
+ * Text Domain: disciple-tools-prayer-list
  * Domain Path: /languages
  * Version:  1.0
  * Author URI: https://github.com/DiscipleTools
- * GitHub Plugin URI: https://github.com/DiscipleTools/disciple-tools-prayer-calendar
+ * GitHub Plugin URI: https://github.com/DiscipleTools/disciple-tools-prayer-list
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
  * Tested up to: 5.8
@@ -23,14 +23,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Gets the instance of the `DT_Prayer_Calendar` class.
+ * Gets the instance of the `DT_Prayer_List` class.
  *
  * @since  0.1
  * @access public
  * @return object|bool
  */
-function dt_prayer_calendar() {
-    $dt_prayer_calendar_required_dt_theme_version = '1.12.3';
+function dt_prayer_list() {
+    $dt_prayer_list_required_dt_theme_version = '1.12.3';
     $wp_theme = wp_get_theme();
     $version = $wp_theme->version;
 
@@ -38,8 +38,8 @@ function dt_prayer_calendar() {
      * Check if the Disciple.Tools theme is loaded and is the latest required version
      */
     $is_theme_dt = strpos( $wp_theme->get_template(), "disciple-tools-theme" ) !== false || $wp_theme->name === "Disciple Tools";
-    if ( $is_theme_dt && version_compare( $version, $dt_prayer_calendar_required_dt_theme_version, "<" ) ) {
-        add_action( 'admin_notices', 'dt_prayer_calendar_hook_admin_notice' );
+    if ( $is_theme_dt && version_compare( $version, $dt_prayer_list_required_dt_theme_version, "<" ) ) {
+        add_action( 'admin_notices', 'dt_prayer_list_hook_admin_notice' );
         add_action( 'wp_ajax_dismissed_notice_handler', 'dt_hook_ajax_notice_handler' );
         return false;
     }
@@ -53,10 +53,10 @@ function dt_prayer_calendar() {
         require_once get_template_directory() . '/dt-core/global-functions.php';
     }
 
-    return DT_Prayer_Calendar::instance();
+    return DT_Prayer_List::instance();
 
 }
-add_action( 'after_setup_theme', 'dt_prayer_calendar', 20 );
+add_action( 'after_setup_theme', 'dt_prayer_list', 20 );
 
 
 
@@ -66,7 +66,7 @@ add_action( 'after_setup_theme', 'dt_prayer_calendar', 20 );
  * @since  0.1
  * @access public
  */
-class DT_Prayer_Calendar {
+class DT_Prayer_List {
 
     private static $_instance = null;
     public static function instance() {
@@ -77,16 +77,10 @@ class DT_Prayer_Calendar {
     }
 
     private function __construct() {
-//        $is_rest = dt_is_rest();
-
-//        if ( strpos( dt_get_url_path(), 'metrics' ) !== false || ( $is_rest && strpos( dt_get_url_path(), 'disciple-tools-prayer-calendar-metrics' ) !== false ) ){
-//            require_once( 'charts/charts-loader.php' );  // add custom charts to the metrics area
-//        }
 
         require_once( 'tile/custom-tile.php' ); // add custom tile
 
         require_once( 'magic-link/magic-link.php' );
-//        require_once( 'settings/add-settings-app.php' );
 
         $this->i18n();
 
@@ -131,7 +125,7 @@ class DT_Prayer_Calendar {
      */
     public static function deactivation() {
         // add functions here that need to happen on deactivation
-        delete_option( 'dismissed-disciple-tools-prayer-calendar' );
+        delete_option( 'dismissed-disciple-tools-prayer-list' );
     }
 
     /**
@@ -142,7 +136,7 @@ class DT_Prayer_Calendar {
      * @return void
      */
     public function i18n() {
-        $domain = 'disciple-tools-prayer-calendar';
+        $domain = 'disciple-tools-prayer-list';
         load_plugin_textdomain( $domain, false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ). 'languages' );
     }
 
@@ -154,7 +148,7 @@ class DT_Prayer_Calendar {
      * @return string
      */
     public function __toString() {
-        return 'disciple-tools-prayer-calendar';
+        return 'disciple-tools-prayer-list';
     }
 
     /**
@@ -189,7 +183,7 @@ class DT_Prayer_Calendar {
      * @access public
      */
     public function __call( $method = '', $args = array() ) {
-        _doing_it_wrong( "dt_prayer_calendar::" . esc_html( $method ), 'Method does not exist.', '0.1' );
+        _doing_it_wrong( "dt_prayer_list::" . esc_html( $method ), 'Method does not exist.', '0.1' );
         unset( $method, $args );
         return null;
     }
@@ -197,32 +191,32 @@ class DT_Prayer_Calendar {
 
 
 // Register activation hook.
-register_activation_hook( __FILE__, [ 'DT_Prayer_Calendar', 'activation' ] );
-register_deactivation_hook( __FILE__, [ 'DT_Prayer_Calendar', 'deactivation' ] );
+register_activation_hook( __FILE__, [ 'DT_Prayer_List', 'activation' ] );
+register_deactivation_hook( __FILE__, [ 'DT_Prayer_List', 'deactivation' ] );
 
 
-if ( ! function_exists( 'dt_prayer_calendar_hook_admin_notice' ) ) {
-    function dt_prayer_calendar_hook_admin_notice() {
-        global $dt_prayer_calendar_required_dt_theme_version;
+if ( ! function_exists( 'dt_prayer_list_hook_admin_notice' ) ) {
+    function dt_prayer_list_hook_admin_notice() {
+        global $dt_prayer_list_required_dt_theme_version;
         $wp_theme = wp_get_theme();
         $current_version = $wp_theme->version;
-        $message = "'Disciple Tools - Prayer Calendar' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.";
+        $message = "'Disciple Tools - Prayer List' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.";
         if ( $wp_theme->get_template() === "disciple-tools-theme" ){
-            $message .= ' ' . sprintf( esc_html( 'Current Disciple Tools version: %1$s, required version: %2$s' ), esc_html( $current_version ), esc_html( $dt_prayer_calendar_required_dt_theme_version ) );
+            $message .= ' ' . sprintf( esc_html( 'Current Disciple Tools version: %1$s, required version: %2$s' ), esc_html( $current_version ), esc_html( $dt_prayer_list_required_dt_theme_version ) );
         }
         // Check if it's been dismissed...
-        if ( ! get_option( 'dismissed-disciple-tools-prayer-calendar', false ) ) { ?>
-            <div class="notice notice-error notice-disciple-tools-prayer-calendar is-dismissible" data-notice="disciple-tools-prayer-calendar">
+        if ( ! get_option( 'dismissed-disciple-tools-prayer-list', false ) ) { ?>
+            <div class="notice notice-error notice-disciple-tools-prayer-list is-dismissible" data-notice="disciple-tools-prayer-list">
                 <p><?php echo esc_html( $message );?></p>
             </div>
             <script>
                 jQuery(function($) {
-                    $( document ).on( 'click', '.notice-disciple-tools-prayer-calendar .notice-dismiss', function () {
+                    $( document ).on( 'click', '.notice-disciple-tools-prayer-list .notice-dismiss', function () {
                         $.ajax( ajaxurl, {
                             type: 'POST',
                             data: {
                                 action: 'dismissed_notice_handler',
-                                type: 'disciple-tools-prayer-calendar',
+                                type: 'disciple-tools-prayer-list',
                                 security: '<?php echo esc_html( wp_create_nonce( 'wp_rest_dismiss' ) ) ?>'
                             }
                         })
@@ -257,9 +251,9 @@ add_action( 'plugins_loaded', function (){
         }
         if ( class_exists( 'Puc_v4_Factory' ) ){
             Puc_v4_Factory::buildUpdateChecker(
-                'https://raw.githubusercontent.com/DiscipleTools/disciple-tools-prayer-calendar/master/version-control.json',
+                'https://raw.githubusercontent.com/DiscipleTools/disciple-tools-prayer-list/master/version-control.json',
                 __FILE__,
-                'disciple-tools-prayer-calendar'
+                'disciple-tools-prayer-list'
             );
         }
     }
