@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-list.svg?branch=master)](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-list)
-
 # Disciple Tools - Prayer List
 
 ## Purpose
@@ -36,3 +34,6 @@ in the [Discussions](https://github.com/DiscipleTools/disciple-tools-prayer-list
 code contributions are welcome using the [Pull Request](https://github.com/DiscipleTools/disciple-tools-prayer-list/pulls)
 system for git. For a more details on contribution see the
 [contribution guidelines](https://github.com/DiscipleTools/disciple-tools-prayer-list/blob/master/CONTRIBUTING.md).
+
+[![Build Status](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-list.svg?branch=master)](https://travis-ci.com/DiscipleTools/disciple-tools-prayer-list)
+
