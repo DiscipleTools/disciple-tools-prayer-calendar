@@ -1,4 +1,4 @@
-# Disciple Tools - Prayer List
+# Prayer List
 
 ## Purpose
 
