@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This project creates a user driving app for adding contacts, groups, and trainings to a daily prayer calender
-micro app. This way a multiplier can pray over key elements of their disciple making on a daily basis
-from data living in Disciple Tools.
+This plugin adds the ability for each user to make a prayer list from contacts and groups. Each user can turn on this app
+in the settings area and build their own prayer list with tags. It creates a dedicated secure link that can be added to a home
+screen on a cell phone for easy prayer access.
 
 ## Usage
 
