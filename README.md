@@ -1,5 +1,5 @@
 
-![Prayer List](https://raw.githubusercontent.com/DiscipleTools/disciple-tools-prayer-list/master/documentation/banner.png)
+![Plugin Banner](https://raw.githubusercontent.com/DiscipleTools/disciple-tools-prayer-list/master/documentation/banner.png)
 # Prayer List
 
 ## Purpose
