@@ -64,6 +64,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
 
     public function dt_magic_url_base_allowed_js( $allowed_js ) {
         $allowed_js[] = 'jquery-touch-punch';
+        $allowed_js[] = 'lodash';
         $allowed_js[] = 'prayer-list-daily-js';
         return $allowed_js;
     }

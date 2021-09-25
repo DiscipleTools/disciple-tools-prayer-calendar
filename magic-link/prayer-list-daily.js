@@ -36,7 +36,7 @@ window.load_app = () => {
   let spinner = jQuery('.loading-spinner')
   spinner.addClass('active')
 
-  window.load_list( window.prepare_list( 'today' ) )
+  window.load_list( window.prepare_list( 'all_tags' ) )
 
   // load menu filter
   let menu = {}
@@ -52,6 +52,9 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
     count: 0,
     list: []
   }
+  var d = new Date();
+  d.setHours(0,0,0,0);
+  let midnight = d.getTime() / 1000
   console.log(type)
 
   jQuery.each(data.list, function(i,v){
@@ -61,9 +64,6 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
   switch (type ) {
     case 'today_desc':
     case 'today':
-      var d = new Date();
-      d.setHours(0,0,0,0);
-      let midnight = d.getTime() / 1000
       jQuery.each(data.list, function(i,v){
         if ( v.last_report < midnight ) {
           list.count++
@@ -75,6 +75,40 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
       if ( 'today_desc' === type ){
         list.list = _.reverse( list.list )
       }
+      break
+    case 'all_tags':
+      let ordered_list = []
+      jQuery.each(data.list, function(i,v){
+        list.count++
+        ordered_list.push(v)
+      })
+
+      ordered_list = _.sortBy(ordered_list, sort )
+      if ( 'today_desc' === type ){
+        ordered_list = _.reverse( ordered_list )
+      }
+
+      jQuery.each(data.tags, function(i,v){
+
+        list.list.push({
+          id: 0,
+          last_report: 0,
+          meta: "",
+          name: v.label,
+          post_id: 0,
+          post_type: "list_item",
+          prayed_today: false,
+          tags: [],
+          times_prayed: 0
+        })
+
+        jQuery.each( ordered_list, function(ii, vv) {
+          if( jQuery.inArray( v.label, vv.tags ) >= 0 ){
+            list.list.push(vv)
+          }
+        })
+
+      })
       break
     case 'oldest':
     case 'newest':
@@ -148,7 +182,7 @@ window.prepare_list = ( type, sort = ['name'], order = ['asc'] ) => {
           if ( 0 ===  v.last_report || v.prayed_today ) {
             v.meta = ''
           } else {
-            v.meta = moment.unix(v.last_report).format('MMMM Do')
+            v.meta = moment.unix(v.last_report).format('M-Do')
           }
           list.list.push(v)
         }
@@ -197,9 +231,10 @@ window.load_list = ( data ) => {
 
   let spinner = jQuery('.loading-spinner')
   let content = jQuery('#content')
-  content.append(`<div class="cell center" style="background:whitesmoke;text-transform:capitalize;">${data.label} <span>(${data.count})</span></div>`)
-
   let icon, checked_off
+
+  content.append(`<div class="cell center" style="background:whitesmoke;text-transform:capitalize;">${data.label} </div>`)
+
   jQuery.each(data.list, function(ii,vv){
     icon = ''
     if ( 'contacts' === vv.post_type ) {
@@ -216,28 +251,37 @@ window.load_list = ( data ) => {
       checked_off = ''
     }
 
-    content.append(`<div class="cell prayer-list-wrapper">
-                        <div class="ui-widget-content prayer-list clickable-item ${checked_off}" data-value="${vv.post_id}" id="item-${vv.post_id}">
+    if ( 'list_item' === vv.post_type ) {
+      content.append(`<div class="cell center" style="background:whitesmoke;text-transform:capitalize;">${vv.name}</div>`)
+    } else {
+      content.append(`<div class="cell prayer-list-wrapper">
+                        <div class="ui-widget-content prayer-list clickable-item ${checked_off} item-${vv.post_id}" data-value="${vv.post_id}" data-type="">
                             <i data-value="${vv.post_id}" class="${icon} clickable-item"></i> <span data-value="${vv.post_id}" class="item-name clickable-item">${vv.name}</span> <span data-value="${vv.post_id}" class="item-meta clickable-item">${vv.meta}</span>
                         </div>
                      </div>
       `)
+    }
   })
 
   let prayer_list = jQuery('.clickable-item')
   prayer_list.click(function(e){
     // console.log(e.target.dataset.value)
-    let selected = jQuery('#item-'+e.target.dataset.value)
+    let selected = jQuery('.item-'+e.target.dataset.value)
     if ( selected.hasClass('recorded') ) {
       return
     }
     selected.addClass('checked-off')
-    jQuery('#item-'+e.target.dataset.value+' span.item-meta').empty()
+    jQuery('.item-'+e.target.dataset.value+' span.item-meta').empty()
 
     window.log_prayer_action(e.target.dataset.value)
       .done(function(data){
         selected.addClass('recorded')
-        window.current_list.list[e.target.dataset.value].prayed_today = true
+        if ( typeof window.current_list.list[e.target.dataset.value] !== 'undefined' ) {
+          window.current_list.list[e.target.dataset.value].prayed_today = true
+        }
+        else if ( typeof window.current_list.status_list[e.target.dataset.value] !== undefined ) {
+          window.current_list.status_list[e.target.dataset.value].prayed_today = true
+        }
       })
   })
 
