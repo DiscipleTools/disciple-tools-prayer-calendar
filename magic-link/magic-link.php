@@ -133,6 +133,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
                 [
                     'methods'  => "POST",
                     'callback' => [ $this, 'endpoint' ],
+                    'permission_callback' => '__return_true',
                 ],
             ]
         );
