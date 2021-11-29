@@ -81,6 +81,7 @@ class DT_Prayer_List {
         require_once( 'tile/custom-tile.php' ); // add custom tile
 
         require_once( 'magic-link/magic-link.php' );
+        require_once( 'network-dashboard/hook.php' );
 
         $this->i18n();
 

@@ -214,7 +214,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
         foreach ( $results as $item ) {
 
             $item['last_report'] = (int) $item['last_report'];
-            $item['id'] = (int) $item['id'];
+//            $item['id'] = (int) $item['id'];
             $item['post_id'] = (int) $item['post_id'];
             $item['times_prayed'] = (int) $item['times_prayed'];
             $item['prayed_today'] = ( $item['last_report'] >= $today_at_midnight );
@@ -451,7 +451,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
         $post_type = get_post_type( $post_id );
 
         $args = [
-            'parent_id' => $parts['post_id'], // using parent_id to record the user_id. i.e. parent of the record is the user.
+            'user_id' => $parts['post_id'], // using parent_id to record the user_id. i.e. parent of the record is the user.
             'post_id' => $post_id,
             'post_type' => $post_type,
             'type' => $parts['root'],
@@ -462,7 +462,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
         ];
 
         // get geolocation of the contact, not the user
-        $post_object = DT_Posts::get_post( $post_type, $post_id, false, false, true );
+        $post_object = DT_Posts::get_post( $post_type, $post_id, true, false, true );
         if ( isset( $post_object['location_grid_meta'] ) ) {
             $location = $post_object['location_grid_meta'][0];
             if ( isset( $location['lng'] ) ) {
