@@ -3,6 +3,13 @@ if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
 class DT_Prayer_List_Tile
 {
+    public $page_title = 'Prayer List';
+    public $page_description = 'A micro app for daily prayer list';
+    public $root = "prayer_list_app";
+    public $type = 'daily';
+    public $post_type = 'contacts';
+    public $meta_key = 'prayer_list_app_daily_magic_key';
+
     private static $_instance = null;
     public static function instance(){
         if ( is_null( self::$_instance ) ) {
@@ -10,14 +17,33 @@ class DT_Prayer_List_Tile
         }
         return self::$_instance;
     }
-    public $root = "prayer_list_app";
-    public $type = 'daily';
-    public $meta_key = '';
 
     public function __construct(){
-        $this->meta_key = $this->root . '_' . $this->type . '_magic_key';
-        add_filter( "dt_custom_fields_settings", [ $this, "dt_custom_fields" ], 100, 2 );
+        add_filter( 'dt_details_additional_tiles', [ $this, 'dt_details_additional_tiles' ], 10, 2 );
+        add_filter( 'dt_settings_apps_list', [ $this, 'dt_settings_apps_list' ], 10, 1 );
+        add_filter( 'dt_custom_fields_settings', [ $this, 'dt_custom_fields_settings' ], 50, 2 );
+
         add_filter( "dt_user_list_filters", [ $this, "dt_user_list_filters" ], 10, 2 );
+    }
+
+    public function dt_details_additional_tiles( $tiles, $post_type = "" ) {
+        if ( $post_type === 'contacts' && ! isset( $tiles["apps"] ) ){
+            $tiles["apps"] = [
+                "label" => __( "Apps", 'disciple_tools' ),
+                "description" => __( "Apps available on this record.", 'disciple_tools' )
+            ];
+        }
+        return $tiles;
+    }
+
+    public function dt_settings_apps_list( $apps_list ) {
+        $apps_list[$this->meta_key] = [
+            'key' => $this->meta_key,
+            'url_base' => $this->root. '/'. $this->type,
+            'label' => $this->page_title,
+            'description' => $this->page_description,
+        ];
+        return $apps_list;
     }
 
     /**
@@ -25,7 +51,7 @@ class DT_Prayer_List_Tile
      * @param string $post_type
      * @return array
      */
-    public function dt_custom_fields( array $fields, string $post_type = "" ) {
+    public function dt_custom_fields_settings( array $fields, string $post_type = "" ) {
 
         if ( in_array( $post_type, [ 'contacts','groups','trainings','streams' ] ) ){
             $fields[$this->meta_key] = [
@@ -41,7 +67,6 @@ class DT_Prayer_List_Tile
 
         return $fields;
     }
-
 
     public function dt_user_list_filters( $filters, $post_type ){
 

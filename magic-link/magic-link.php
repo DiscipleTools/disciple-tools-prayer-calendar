@@ -27,7 +27,6 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
         /**
          * user_app and module section
          */
-        add_filter( 'dt_settings_apps_list', [ $this, 'dt_settings_apps_list' ], 10, 1 );
         add_action( 'rest_api_init', [ $this, 'add_endpoints' ] );
         /**
          * tests if other URL
@@ -52,15 +51,6 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
 
     }
 
-    public function dt_settings_apps_list( $apps_list ) {
-        $apps_list[$this->meta_key] = [
-            'key' => $this->meta_key,
-            'url_base' => $this->root. '/'. $this->type,
-            'label' => $this->page_title,
-            'description' => $this->page_description,
-        ];
-        return $apps_list;
-    }
 
     public function dt_magic_url_base_allowed_js( $allowed_js ) {
         $allowed_js[] = 'jquery-touch-punch';
