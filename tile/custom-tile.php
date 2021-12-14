@@ -23,7 +23,7 @@ class DT_Prayer_List_Tile
         add_filter( 'dt_settings_apps_list', [ $this, 'dt_settings_apps_list' ], 10, 1 );
         add_filter( 'dt_custom_fields_settings', [ $this, 'dt_custom_fields_settings' ], 50, 2 );
 
-        add_filter( "dt_user_list_filters", [ $this, "dt_user_list_filters" ], 10, 2 );
+        add_filter( "dt_user_list_filters", [ $this, "dt_user_list_filters" ], 30, 2 );
     }
 
     public function dt_details_additional_tiles( $tiles, $post_type = "" ) {
