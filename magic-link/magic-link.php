@@ -9,6 +9,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
     public $page_description = 'A micro user app page that can be added to home screen.';
     public $root = "prayer_list_app";
     public $type = 'daily';
+    public $type_name = 'Prayer List App';
     public $post_type = 'user';
     private $meta_key = '';
 
@@ -21,7 +22,6 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
     } // End instance()
 
     public function __construct() {
-        $this->meta_key = $this->root . '_' . $this->type . '_magic_key';
         parent::__construct();
 
         /**
