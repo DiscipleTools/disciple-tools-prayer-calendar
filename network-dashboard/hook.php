@@ -47,7 +47,7 @@ function dt_prayer_list_build_message( $activity_log ){
             if ( 'prayer_list_app' === $log['action'] ) {
                 $initials = dt_create_initials( $log['lng'], $log['lat'], $log['payload'] );
                 $initials_2 = dt_create_initials( $log['lng'], $log['lat'], $log['payload'] );
-                $activity_log[$index]['message'] = $initials . ' is praying for ' . $initials_2 . "( location)";
+                $activity_log[$index]['message'] = $initials . ' is praying for ' . $initials_2;
             }
 
         }

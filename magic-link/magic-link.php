@@ -51,7 +51,6 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
 
     }
 
-
     public function dt_magic_url_base_allowed_js( $allowed_js ) {
         $allowed_js[] = 'jquery-touch-punch';
         $allowed_js[] = 'lodash';
@@ -87,7 +86,6 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
      * Writes javascript to the footer
      *
      * @see DT_Magic_Url_Base()->footer_javascript() for default state
-     * @todo remove if not needed
      */
     public function footer_javascript(){
         ?>
@@ -98,7 +96,6 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
                 'nonce' => wp_create_nonce( 'wp_rest' ),
                 'parts' => $this->parts,
                 'translations' => [
-                    'add' => __( 'Add Magic', 'disciple-tools-plugin-starter-template' ),
                 ],
             ]) ?>][0]
 
