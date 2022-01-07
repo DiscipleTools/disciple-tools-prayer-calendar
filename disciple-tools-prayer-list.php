@@ -5,7 +5,7 @@
  * Description: Add a prayer list for users that lets you select contacts and groups, and place them on a daily list to pray through.
  * Text Domain: disciple-tools-prayer-list
  * Domain Path: /languages
- * Version:  1.5
+ * Version:  1.6
  * Author URI: https://github.com/DiscipleTools
  * GitHub Plugin URI: https://github.com/DiscipleTools/disciple-tools-prayer-list
  * Requires at least: 4.7.0

@@ -22,6 +22,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
     } // End instance()
 
     public function __construct() {
+        $this->meta_key = $this->root . '_' . $this->type . '_magic_key';
         parent::__construct();
 
         /**
