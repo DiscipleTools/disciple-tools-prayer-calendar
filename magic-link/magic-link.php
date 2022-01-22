@@ -96,8 +96,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
                 'root' => esc_url_raw( rest_url() ),
                 'nonce' => wp_create_nonce( 'wp_rest' ),
                 'parts' => $this->parts,
-                'translations' => [
-                ],
+                'translations' => [],
             ]) ?>][0]
 
 
@@ -175,12 +174,12 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
                    (
                     SELECT r.timestamp
                     FROM $wpdb->dt_reports r
-                    WHERE r.parent_id = %d AND r.post_id = p.ID
+                    WHERE r.user_id = %d AND r.post_id = p.ID AND r.type = %s AND r.subtype = %s
                     ORDER BY timestamp DESC LIMIT 1
                     ) as last_report,
                    (SELECT count(id)
                        FROM $wpdb->dt_reports rr
-                       WHERE rr.parent_id = %d AND rr.post_id = p.ID
+                       WHERE rr.user_id = %d AND rr.post_id = p.ID AND rr.type = %s AND rr.subtype = %s
                        GROUP BY rr.post_id
                    ) as times_prayed
             FROM $wpdb->dt_post_user_meta pum
@@ -188,7 +187,7 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
             WHERE pum.user_id = %d
               AND pum.meta_key = %s
               AND pum.meta_value != 'none'
-        ", $parts['post_id'], $parts['post_id'], $parts['post_id'], $this->meta_key ), ARRAY_A );
+        ", $parts['post_id'], $parts['root'], $parts['type'], $parts['post_id'], $parts['root'], $parts['type'], $parts['post_id'], $this->meta_key ), ARRAY_A );
 
         $tags = $wpdb->get_results( $wpdb->prepare( "
             SELECT pum.post_id, pum.meta_value as tag
@@ -248,18 +247,18 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
                    pm.meta_value as status,
                    ( SELECT r.timestamp
                      FROM $wpdb->dt_reports r
-                     WHERE r.parent_id = %d AND r.post_id = p.ID
+                     WHERE r.user_id = %d AND r.post_id = p.ID AND r.type = %s AND r.subtype = %s
                      ORDER BY timestamp DESC LIMIT 1) as last_report,
                    (SELECT count(id)
                      FROM $wpdb->dt_reports rr
-                     WHERE rr.parent_id = %d AND rr.post_id = p.ID
+                     WHERE rr.user_id = %d AND rr.post_id = p.ID AND rr.type = %s AND rr.subtype = %s
                      GROUP BY rr.post_id) as times_prayed
             FROM $wpdb->dt_share s
             JOIN $wpdb->postmeta pm ON pm.post_id=s.post_id AND pm.meta_key IN ($status_key) AND pm.meta_value IN ($status_types)
             LEFT JOIN $wpdb->posts p ON p.ID=s.post_id
             LEFT JOIN $wpdb->dt_post_user_meta pum ON s.post_id=pum.post_id
             WHERE s.user_id = %d
-        ", $parts['post_id'], $parts['post_id'], $parts['post_id'] ), ARRAY_A );
+        ", $parts['post_id'], $parts['root'], $parts['type'], $parts['post_id'], $parts['root'], $parts['type'], $parts['post_id'], $parts['post_id'] ), ARRAY_A );
         // @phpcs:enable
 
         foreach ( $status as $item ) {
@@ -324,10 +323,10 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
                     FROM $wpdb->dt_reports r
                     WHERE r.timestamp > %d
                       AND r.parent_id = %d
-                    AND r.type = 'prayer_list_app'
-                    AND r.subtype = 'daily'
+                    AND r.type = %s
+                    AND r.subtype = %s
                 )
-        ", $parts['post_id'], $this->meta_key, $day_key, $time_at_start_of_day, $parts['post_id'] ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key, $day_key, $time_at_start_of_day, $parts['post_id'], $parts['root'], $parts['type'] ), ARRAY_A );
         if ( ! empty( $data['lists']['today'] ) ){
             $data['counts']['today'] = count( $data['lists']['today'] );
         }
@@ -345,10 +344,10 @@ class DT_Prayer_List_Magic_Link extends DT_Magic_Url_Base
                     FROM $wpdb->dt_reports r
                     WHERE r.timestamp > %d
                       AND r.parent_id = %d
-                    AND r.type = 'prayer_list_app'
-                    AND r.subtype = 'daily'
+                    AND r.type = %s
+                    AND r.subtype = %s
                 )
-        ", $parts['post_id'], $this->meta_key, $time_a_week_ago, $parts['post_id'] ), ARRAY_A );
+        ", $parts['post_id'], $this->meta_key, $time_a_week_ago, $parts['post_id'], $parts['root'], $parts['type'], ), ARRAY_A );
         if ( ! empty( $data['lists']['weekly'] ) ){
             $data['counts']['weekly'] = count( $data['lists']['weekly'] );
         }

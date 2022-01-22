@@ -1,12 +1,12 @@
 <?php
 if ( !defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly.
 
-add_action( 'dt_insert_report', function($args){
+add_action( 'dt_insert_report', function( $args){
 
     if ( ! function_exists( 'dt_network_site_id' ) ) {
         return;
     }
-    if ( ! class_exists( 'DT_Network_Dashboard_Metrics_Base') ) {
+    if ( ! class_exists( 'DT_Network_Dashboard_Metrics_Base' ) ) {
         return;
     }
     if ( ! isset( $args['type'], $args['subtype'], $args['post_id'] ) ) {
@@ -29,7 +29,7 @@ add_action( 'dt_insert_report', function($args){
             'timestamp' => $args['time_end'] ?? time()
         ];
 
-        DT_Network_Activity_Log::insert($data);
+        DT_Network_Activity_Log::insert( $data );
     }
 
 }, 10, 1 );
@@ -49,7 +49,6 @@ function dt_prayer_list_build_message( $activity_log ){
                 $initials_2 = dt_create_initials( $log['lng'], $log['lat'], $log['payload'] );
                 $activity_log[$index]['message'] = $initials . ' is praying for ' . $initials_2;
             }
-
         }
     }
 
